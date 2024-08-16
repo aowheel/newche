@@ -14,7 +14,11 @@ const AttendeesList = async ({ scheduleId }: { scheduleId: number }) => {
 
   return (
     <>
-      <td className="w-72 overflow-x-auto flex gap-x-2 items-center">
+      <td>
+        {attendees?.length}
+      </td>
+
+      <td className="overflow-x-auto flex gap-x-2 items-center">
       {attendees?.map((item, index) => (
         <span key={index} className="flex flex-shrink-0 gap-x-1">
           <Image
@@ -27,9 +31,6 @@ const AttendeesList = async ({ scheduleId }: { scheduleId: number }) => {
           <span>{item.displayName}</span>
         </span>
       ))}
-      </td>
-      <td>
-        {attendees?.length}
       </td>
     </>     
   );
@@ -74,8 +75,8 @@ const OverallSchedule = async ({ withAttendees, userId, month, mode }: {
             <th>TIMESPAN</th>
             {withAttendees && mode !== "edit" &&
             <>
-              <th>ATTENDEES</th>
               <th>NUMBER</th>
+              <th>ATTENDEES</th>
             </>}
             {withAttendees && mode === "edit" && <th>ATTENDANCE</th>}
             {!withAttendees && <th>DESCRIPTION</th>}
@@ -91,10 +92,13 @@ const OverallSchedule = async ({ withAttendees, userId, month, mode }: {
               "bg-teal-50": item.type === "event"
             })}>
               <th>{item.date}</th>
+
               <th>
               {!!item.start && !!item.end &&
               <span className="flex items-center justify-center">
-                {item.start}<MdArrowRight />{item.end}
+                <span>{item.start}</span>
+                <MdArrowRight />
+                <span>{item.end}</span>
               </span>}
               </th>
 

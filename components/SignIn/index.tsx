@@ -23,7 +23,7 @@ const SignIn = () => {
             isPending &&
             <LoadingCircle />
           }
-          <label>Sign in with Google</label>
+          <span>Sign in with Google</span>
         </button>
       </form>
     </>

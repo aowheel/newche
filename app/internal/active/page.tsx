@@ -1,6 +1,6 @@
 import Loading from "@/app/loading";
 import { auth } from "@/auth";
-import { LoadingDots } from "@/components/Common";
+import InitOneSignal from "@/components/InitOneSignal";
 import OverallSchedule from "@/components/OverallSchedule";
 import { ChangeMode, FinishEditMode } from "@/components/SetMode";
 import SetMonth from "@/components/SetMonth";
@@ -41,9 +41,9 @@ const Page = async ({ searchParams }: {
 
           {mode === "edit" &&
           <div className="flex gap-x-6">
-            <div className="flex items-center text-green-100"><FiCheckCircle className="mr-2 text-xl" />参加</div>
-            <div className="flex items-center text-red-100"><FiXCircle className="mr-2 text-xl" />不参加</div>
-            <div className="flex items-center text-yellow-100"><FiMinusCircle className="mr-2 text-xl" />未定</div>
+            <div className="flex items-center text-white"><FiCheckCircle className="mr-2 text-xl" />参加</div>
+            <div className="flex items-center text-white"><FiXCircle className="mr-2 text-xl" />不参加</div>
+            <div className="flex items-center text-white"><FiMinusCircle className="mr-2 text-xl" />未定</div>
           </div>}
 
           <Suspense fallback={<Loading />}>
@@ -55,8 +55,10 @@ const Page = async ({ searchParams }: {
       </div>
 
       {mode === "edit" && <FinishEditMode />}
-      
+
       <SetMonth />
+
+      <InitOneSignal />
     </>
   );
 }

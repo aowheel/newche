@@ -36,7 +36,9 @@ export default async function handleOverallSchedule(prevState: { ok?: string, er
       let detail;
       const schedule = await prisma.schedule.findFirst({
         where: {
-          date: validatedForm.data.date
+          date: validatedForm.data.date,
+          start: validatedForm.data.start,
+          end: validatedForm.data.end
         },
         select: {
           id: true

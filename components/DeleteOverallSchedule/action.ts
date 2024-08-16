@@ -8,7 +8,7 @@ export default async function deleteOverallSchedule(prevState: { ok?: string, er
   const ISODate = z.coerce.date().safeParse(date.data);
   if (!ISODate.success) return { error: "Error!" };
   else {
-    const schedule = await prisma.schedule.findUnique({
+    const schedule = await prisma.schedule.findMany({
       where: {
         date: ISODate.data
       },
@@ -18,11 +18,19 @@ export default async function deleteOverallSchedule(prevState: { ok?: string, er
     });
     if (!schedule) return { error: "No such data." };
     await prisma.attendance.deleteMany({
-      where: { scheduleId: schedule.id },
+      where: {
+        scheduleId: {
+          in: schedule.map(item => item.id)
+        }
+      }
     });
-    await prisma.schedule.delete({
-      where: { id: schedule.id }
+    await prisma.schedule.deleteMany({
+      where: {
+        id: {
+          in: schedule.map(item => item.id)
+        }
+      }
     });
-    return { ok: `Success! -> DELETED ${schedule.id}` };
+    return { ok: `Success! -> DELETED ${schedule}` };
   }
 }

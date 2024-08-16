@@ -22,10 +22,10 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <footer className={`${inter.className} px-4 py-2 flex flex-wrap justify-around gap-x-8 gap-y-2 border-t border-slate-600 text-slate-400`}>
           <Link href="/">Home</Link>
           <Link href="/internal">Schedule</Link>
-          <Link href="/internal/admin">Admin</Link>
           <Link href="/privacy">Privacy</Link>
           <Link href="/terms">Terms</Link>
           <Link href="/settings">Settings</Link>
+          <Link href="/internal/admin">Admin</Link>
         </footer>
       </body>
     </html>

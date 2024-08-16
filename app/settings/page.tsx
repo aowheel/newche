@@ -2,7 +2,6 @@ import { auth } from "@/auth";
 import SetUserDetails from "@/components/SetUserDetails";
 import SignIn from "@/components/SignIn";
 import SignOut from "@/components/SignOut";
-import { cookies } from "next/headers";
 import { FaCheck } from "react-icons/fa6";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { MdLogin } from "react-icons/md";
@@ -21,12 +20,11 @@ const Page = async () => {
       </>
     );
   }
-  const displayName = cookies().get("displayName");
-  if (!displayName) {
+  if (!session.user.displayName) {
     return (
       <>
         <MdLogin className="text-5xl text-white" />
-        <SetUserDetails isFirst={true} />
+        <SetUserDetails />
       </>
     );
   }
@@ -34,7 +32,7 @@ const Page = async () => {
     <>
       <FaCheck className="text-yellow-200 text-4xl" />
       <p className="text-white">サインイン済みです。</p>
-      <SetUserDetails isFirst={false} />
+      <SetUserDetails displayName={session.user.displayName} period={session.user.period || 0} />
       <SignOut />
     </>
   );

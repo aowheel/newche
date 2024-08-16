@@ -2,17 +2,18 @@
 
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { z } from "zod";
 
-export default async function handleUserDetails(prevState: { isFirst: boolean, ok?: string, error?: string }, formData: FormData) {
+export default async function handleUserDetails(prevState: {
+  ok?: string;
+  error?: string;
+}, formData: FormData) {
   const displayName = z.string().min(2).max(5).safeParse(formData.get("displayName"));
   const period = z.coerce.number().int().safeParse(formData.get("period"));
   if (!displayName.success) {
-    return { isFirst: prevState.isFirst, error: "表示名は2字以上5字以内です。" };
+    return { error: "表示名は2字以上5字以内です。" };
   } else if (!period.success) {
-    return { isFirst: prevState.isFirst, error: "期は整数で入力してください。" };
+    return { error: "期は整数で入力してください。" };
   } else {
     try {
       const session = await auth();
@@ -27,18 +28,15 @@ export default async function handleUserDetails(prevState: { isFirst: boolean, o
           id: true,
         },
       });
-      if (!!user) return { isFirst: prevState.isFirst, error: "この表示名は使用できません。" }
+      if (!!user) return { error: "この表示名は使用できません。" }
       await prisma.user.update({
         data: {
           displayName: displayName.data,
           period: period.data,
         },
-        where: { id: session?.user?.id },
+        where: { id: session?.user.id }
       });
-      cookies().set("displayName", displayName.data, { maxAge: 60*60*24*365 });
-      cookies().set("period", `${period.data}`, { maxAge: 60*60*24*365 });
-      if (prevState.isFirst) redirect("/internal");
-      return { isFirst: prevState.isFirst, ok: "変更を反映しました。" };
+      return { ok: "変更を反映しました。" };
     } catch(error) {
       throw error;
     }

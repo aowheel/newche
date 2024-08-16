@@ -2,7 +2,6 @@
 
 import { signOut } from "@/auth";
 import { inter } from "@/lib/fonts";
-import { cookies } from "next/headers";
 import { MdLogout } from "react-icons/md";
 
 const SignOut = async () => {

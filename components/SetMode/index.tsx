@@ -4,6 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { FaRegCalendar, FaRegCalendarCheck, FaXmark } from "react-icons/fa6";
 import { MdDoubleArrow } from "react-icons/md";
 import { LoadingDots } from "../Common";
+import clsx from "clsx";
 
 export const ChangeMode = () => {
   const searchParams = useSearchParams();
@@ -26,16 +27,19 @@ export const ChangeMode = () => {
     <button
       type="button"
       onClick={handleSearch}
-      className="m-1 p-2 rounded border-double outline outline-offset-2 outline-2 outline-white flex justify-center gap-x-4 bg-white text-2xl"
+      className={clsx("m-1 p-2 rounded border-double outline outline-offset-2 outline-2 flex justify-center gap-x-4 bg-white text-2xl", {
+        "outline-white": !isEditMode,
+        "outline-teal-300": isEditMode
+      })}
     >
       {!isEditMode ? <>
         <FaRegCalendar className="text-slate-900" />
         <MdDoubleArrow className="text-slate-900" />
         <FaRegCalendarCheck className="text-teal-300" />
       </> : <>
-        <FaRegCalendarCheck className="text-slate-900" />
+        <FaRegCalendarCheck className="text-teal-300" />
         <MdDoubleArrow className="text-slate-900" />
-        <FaRegCalendar className="text-teal-300" />
+        <FaRegCalendar className="text-slate-900" />
       </>}
     </button>
   );

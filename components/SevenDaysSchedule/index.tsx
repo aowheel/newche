@@ -4,6 +4,7 @@ import { getAttendees, getSevenDaysSchedule, hasLacks } from "@/utils/schedule-d
 import Image from "next/image";
 import { Suspense } from "react";
 import { FaArrowRight } from "react-icons/fa6";
+import { MdArrowRight } from "react-icons/md";
 
 const Attendees = async ({ scheduleId }: { scheduleId: number }) => {
   const attendees = await getAttendees(scheduleId);
@@ -66,16 +67,18 @@ const SevenDaysSchedule = async ({ userId }: { userId: string }) => {
         <div key={index} className="w-full overflow-x-auto p-2 rounded-lg border-2">
           <table key={index} className="w-full text-white text-lg">
             <caption className="w-full p-2 text-xl">
-              <span className="flex gap-x-1">
+              <span className="flex gap-x-2 items-center">
                 <span>{item.date}</span>
-                <span>{item.start}</span>
-                <span>-</span>
-                <span>{item.end}</span>
+                <span className="flex items-center">
+                  <span>{item.start}</span>
+                  <MdArrowRight />
+                  <span>{item.end}</span>
+                </span>
                 {!!item.description &&
                 <span>{item.description}</span>}
               </span>
             </caption>
-            <Suspense >
+            <Suspense>
               <Attendees scheduleId={item.id} />
             </Suspense>
           </table>

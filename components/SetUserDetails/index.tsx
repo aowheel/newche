@@ -6,12 +6,14 @@ import { IoMdAlert } from "react-icons/io";
 import { LoadingCircle } from "../Common";
 import { FaCheckCircle } from "react-icons/fa";
 
-const SetUserDetails = ({ isFirst }: { isFirst: boolean }) => {
+const SetUserDetails = ({ displayName, period }: {
+  displayName?: string;
+  period?: number;
+}) => {
   const initialState: {
-    isFirst: boolean;
     ok?: string;
     error?: string;
-  } = { isFirst: isFirst };
+  } = {};
   const [state, formAction, isPending] = useActionState(handleUserDetails, initialState);
   return (
     <>
@@ -19,8 +21,8 @@ const SetUserDetails = ({ isFirst }: { isFirst: boolean }) => {
         action={formAction}
         className="p-8 flex flex-col items-center gap-y-8 rounded-lg border border-slate-300"
       >
-        <input type="text" name="displayName" placeholder="表示名 (必須)" className="px-2 py-1 rounded" />
-        <input type="number" name="period" placeholder="期 (現役生は必須)" className="rounded px-2 py-1" />
+        <input type="text" name="displayName" placeholder={displayName || "表示名 (必須)"} className="px-2 py-1 rounded" />
+        <input type="number" name="period" placeholder={!!period ? period.toString() : "期 (現役生は必須)"} className="rounded px-2 py-1" />
         {
           !!state.ok &&
           <div className="flex items-center gap-x-2 text-green-400">
@@ -40,10 +42,7 @@ const SetUserDetails = ({ isFirst }: { isFirst: boolean }) => {
             isPending &&
             <LoadingCircle />
           }
-          <label>
-            { isFirst && <>詳細を登録</> }
-            { !isFirst && <>詳細を更新</> }
-          </label>
+          <span>詳細の設定 / 更新</span>
         </button>
       </form>
     </>
