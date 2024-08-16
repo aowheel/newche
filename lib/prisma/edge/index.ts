@@ -1,8 +1,9 @@
 import { Pool } from "@neondatabase/serverless";
 import { PrismaNeon } from "@prisma/adapter-neon";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client/edge";
+import { withAccelerate } from "@prisma/extension-accelerate";
 
-const neon = new Pool({ connectionString: process.env.POSTGRES_PRISMA_URL });
-const adapter = new PrismaNeon(neon);
-const prisma = new PrismaClient({ adapter });
+export const runtime = "edge";
+const prisma = new PrismaClient().$extends(withAccelerate());
+
 export default prisma;
