@@ -1,6 +1,5 @@
 import Loading from "@/app/loading";
 import { auth } from "@/auth";
-import InitOneSignal from "@/components/InitOneSignal";
 import OverallSchedule from "@/components/OverallSchedule";
 import { ChangeMode, FinishEditMode } from "@/components/SetMode";
 import SetMonth from "@/components/SetMonth";
@@ -57,8 +56,6 @@ const Page = async ({ searchParams }: {
       {mode === "edit" && <FinishEditMode />}
 
       <SetMonth />
-
-      <InitOneSignal />
     </>
   );
 }
