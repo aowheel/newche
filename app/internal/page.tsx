@@ -1,25 +1,23 @@
-import Loading from "@/app/loading";
+import { LoadingDots } from "@/components/Common";
 import OverallSchedule from "@/components/OverallSchedule";
-import SetMonth from "@/components/SetMonth";
 import { Suspense } from "react";
-
-const Page = async ({
-  searchParams,
-}: {
+const Page = async ({ searchParams }: {
   searchParams?: {
     month?: string;
+    mode?: string;
   };
 }) => {
   const month = searchParams?.month;
-  const monthKey = month || "";
+  const mode = searchParams?.mode;
 
   return (
-    <>
-      <Suspense key={monthKey} fallback={<Loading />}>
-        <OverallSchedule withAttendees={false} month={month} />
-      </Suspense>
-      <SetMonth />
-    </>
+    <Suspense fallback={
+      <div className="w-full h-full flex items-center justify-center text-slate-200">
+        <LoadingDots text="Loading overall schedule" />
+      </div>
+    }>
+      <OverallSchedule month={month} mode={mode} />
+    </Suspense>
   );
 }
 

@@ -4,17 +4,17 @@ import { useActionState } from "react";
 import handleOverallSchedule from "./action";
 import { inter } from "@/lib/fonts";
 
-const SetOverallSchedule = ({ date }: { date: string }) => {
+const SetOverallSchedule = () => {
   const initialState: {
     ok?: string, error?: string
   } = {};
   const [message, formAction, isPending] = useActionState(handleOverallSchedule, initialState);
 
   return (
-    <form action={formAction} className={`w-full ${inter.className} p-4 flex flex-col items-center gap-y-4 rounded-lg bg-slate-200 text-slate-700`}>
+    <form action={formAction} className={`${inter.className} flex-none w-full p-8 flex flex-col items-center gap-y-4 rounded-lg bg-slate-200 text-slate-700`}>
       <p className="text-2xl">Create or Update</p>
 
-      <input type="date" name="date" defaultValue={date} required />
+      <input type="date" name="date" required />
 
       <select name="type">
         <option>default</option>

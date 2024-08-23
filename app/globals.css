@@ -23,15 +23,3 @@ th, td {
   white-space: nowrap;
   font-weight: normal;
 }
-
-input[type="radio"] + label {
-  color: #cbd5e1;
-}
-
-input[type="radio"]:checked + label {
-  color: #5eead4;
-}
-
-input[type="radio"] {
-  display: none;
-}

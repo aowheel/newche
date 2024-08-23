@@ -21,8 +21,8 @@ const SetUserDetails = ({ displayName, period }: {
         action={formAction}
         className="p-8 flex flex-col items-center gap-y-8 rounded-lg border border-slate-300"
       >
-        <input type="text" name="displayName" placeholder={displayName || "表示名 (必須)"} className="px-2 py-1 rounded" />
-        <input type="number" name="period" placeholder={!!period ? period.toString() : "期 (現役生は必須)"} className="rounded px-2 py-1" />
+        <input type="text" name="displayName" placeholder={displayName || "表示名"} className="px-2 py-1 rounded" />
+        <input type="number" name="period" placeholder={!!period ? period.toString() : "期"} className="rounded px-2 py-1" />
         {
           !!state.ok &&
           <div className="flex items-center gap-x-2 text-green-400">

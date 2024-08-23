@@ -33,7 +33,7 @@ export default async function handleOverallSchedule(prevState: { ok?: string, er
     return { error: "Error!" };
   } else {
     try {
-      let detail;
+      let message;
       const schedule = await prisma.schedule.findFirst({
         where: {
           date: validatedForm.data.date,
@@ -53,7 +53,7 @@ export default async function handleOverallSchedule(prevState: { ok?: string, er
             id: schedule.id
           }
         });
-        detail = `UPDATED ${schedule.id}`;
+        message = `UPDATED ${schedule.id}`;
       } else {
         const newSchedule = await prisma.schedule.create({
           data: {
@@ -63,9 +63,9 @@ export default async function handleOverallSchedule(prevState: { ok?: string, er
             id: true
           }
         });
-        detail = `NEW ${newSchedule.id}`;
+        message = `NEW ${newSchedule.id}`;
       }
-      return { ok: `Success! -> ${detail}` };
+      return { ok: `Success! -> ${message}` };
     } catch (error) {
       throw error;
     }

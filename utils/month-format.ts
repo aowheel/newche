@@ -13,7 +13,7 @@ const monthFormat = async (month?: string) => {
   let lt = z.date().safeParse(endDate).data;
   if (!gte || !lt) {
     gte = new Date();
-    gte.setTime(gte.getTime() - 9*60*60*1000)
+    gte.setTime(gte.getTime() - 9*60*60*1000);
     restricted = false;
   }
   let caption = "UP TO DATE";

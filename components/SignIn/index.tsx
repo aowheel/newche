@@ -8,7 +8,7 @@ import clsx from "clsx";
 import { LoadingCircle } from "../Common";
 
 const SignIn = () => {
-  const [dummy, formAction, isPending] = useActionState(handleSignIn, undefined);
+  const [_, formAction, isPending] = useActionState(handleSignIn, undefined);
   return (
     <>
       <form action={formAction}>

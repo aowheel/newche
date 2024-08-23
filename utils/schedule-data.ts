@@ -13,7 +13,9 @@ export const getSchedule = async (month?: string) => {
         lt: lt
       }
     },
-    orderBy: { date: "asc" },
+    orderBy: {
+      date: "asc"
+    },
     select: {
       id: true,
       type: true,
@@ -36,15 +38,53 @@ export const getSchedule = async (month?: string) => {
 
   return {
     caption: caption,
-    schedule: schedule.map(item => {
-      return {
+    schedule: schedule.map(item => (
+      {
         ...item,
         date: dateFormat(item.date, dateOption),
         start: dateFormat(item.start || undefined, timeOption),
         end: dateFormat(item.end || undefined, timeOption)
       }
-    })
+    ))
   };
+}
+
+export const getLatestSchedule = async () => {
+  const gte = new Date();
+  gte.setTime(gte.getTime() - 9*60*60*1000);
+  
+  const schedule = await prisma.schedule.findFirst({
+    where: {
+      date: {
+        gte: gte
+      }
+    },
+    orderBy: {
+      date: "asc"
+    },
+    select: {
+      date: true,
+      start: true,
+      end: true
+    }
+  });
+
+  if (!schedule) return undefined;
+  
+  const dateOption = {
+    month: "numeric",
+    day: "numeric"
+  }
+  const timeOption =  {
+    hour: "numeric",
+    minute: "2-digit"
+  }
+
+  return {
+    date: dateFormat(schedule.date, dateOption),
+    start: dateFormat(schedule.start || undefined, timeOption),
+    end: dateFormat(schedule.end || undefined, timeOption)
+  }
 }
 
 export const getSevenDaysSchedule = async () => {
@@ -55,15 +95,19 @@ export const getSevenDaysSchedule = async () => {
   sevenDaysLater.setDate(currentDate.getDate() + 7);
   const lt = sevenDaysLater;
 
-  const schedule =  await prisma.schedule.findMany({
+  const schedule = await prisma.schedule.findMany({
     where: {
       date: {
         gte: gte,
         lt: lt
       }
     },
+    orderBy: {
+      date: "asc"
+    },
     select: {
       id: true,
+      type: true,
       date: true,
       start: true,
       end: true,
@@ -81,17 +125,17 @@ export const getSevenDaysSchedule = async () => {
     minute: "2-digit"
   };
 
-  return schedule.map(item => {
-    return {
+  return schedule?.map(item => (
+    {
       ...item,
       date: dateFormat(item.date, dateOption),
       start: dateFormat(item.start || undefined, timeOption),
       end: dateFormat(item.end || undefined, timeOption)
     }
-  });
+  ));
 }
 
-export const hasLacks = async (userId: string, scheduleIds: number[]) => {
+export const findLacks = async (userId: string, scheduleIds: number[]) => {
   return !!await prisma.schedule.findFirst({
     where: {
       id: {
@@ -152,10 +196,13 @@ export const getAttendance = async (userId: string, scheduleId: number) => {
   });
 }
 
-export const getComment = async (scheduleId: number) => {
+export const getComments = async (scheduleId: number) => {
   return await prisma.comment.findMany({
     where: {
       id: scheduleId
+    },
+    orderBy: {
+      createdAt: "asc"
     },
     select: {
       userId: true,

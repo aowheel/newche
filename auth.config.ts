@@ -1,16 +1,5 @@
-import Google from "next-auth/providers/google";
-import type { DefaultSession, NextAuthConfig } from "next-auth";
-import "next-auth/jwt";
-import prisma from "./lib/prisma/edge";
-
-declare module "next-auth" {
-  interface Session {
-    user: {
-      displayName: string | null,
-      period: number | null
-    } & DefaultSession["user"]
-  }
-}
+import google from "next-auth/providers/google";
+import type { NextAuthConfig } from "next-auth";
 
 const authConfig = {
   pages: {
@@ -21,49 +10,18 @@ const authConfig = {
       const isSignedIn = !!auth?.user;
       const isOnInternal = nextUrl.pathname.startsWith("/internal");
       if (isOnInternal) {
-        if (!isSignedIn) return false;
-        const isActive = (auth.user.period || 0) >= Number(process.env.YOUNGEST_ACTIVE) - 5;
-        const isOnActive = nextUrl.pathname.startsWith("/internal/active");
-        const isOnAdmin = nextUrl.pathname.startsWith("/internal/admin");
-        if (isOnActive) {
-          if (isActive) return true;
-          return Response.redirect(new URL("/internal", nextUrl));
-        } else if (isOnAdmin) {
-          if (process.env.ADMIN_EMAIL?.split(",").includes(auth.user.email || "")) return true;
-          return Response.redirect(new URL("/internal", nextUrl));
-        } else if (isActive) {
-          return Response.redirect(new URL("/internal/active", nextUrl));
-        }
-        return true;
+        if (isSignedIn) return true;
+        return false;
       }
       return true;
     },
     session: async ({ session, token }) => {
       if (!token.sub) return session;
-      
       session.user.id = token.sub;
-
-      if (!!session.user.displayName) return session;
-
-      const { displayName, period } = await prisma.user.findUnique({
-        where: {
-          id: token.sub
-        },
-        select: {
-          displayName: true,
-          period: true
-        }
-      }) || { displayName: null, period: null };
-
-      if (!displayName) return session;
-
-      session.user.displayName = displayName;
-      session.user.period = period;
-
       return session;
     }
   },
-  providers: [Google]
+  providers: [google]
 } satisfies NextAuthConfig;
 
 export default authConfig;

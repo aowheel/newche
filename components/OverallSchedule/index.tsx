@@ -1,38 +1,22 @@
 "use server";
 
-import clsx from "clsx";
-import { Fragment, Suspense } from "react";
-import { FaLightbulb } from "react-icons/fa6";
-import { MdArrowRight, MdSubdirectoryArrowRight } from "react-icons/md";
-import { getAttendance, getAttendees, getSchedule, hasLacks } from "@/utils/schedule-data";
-import Image from "next/image";
+import { auth } from "@/auth";
+import { getSchedule, findLacks, getAttendees, getAttendance } from "@/utils/schedule-data";
+import { FaCaretRight, FaLightbulb } from "react-icons/fa6";
+import AttendeeDetails from "../AttendeeDetails";
 import SetAttendance from "../SetAttendance";
-import { FaArrowCircleDown } from "react-icons/fa";
+import clsx from "clsx";
+import SetMode from "../SetMode";
+import { Suspense } from "react";
 
-const AttendeesList = async ({ scheduleId }: { scheduleId: number }) => {
+const Attendees = async ({ scheduleId }: { scheduleId: number }) => {
   const attendees = await getAttendees(scheduleId);
-
   return (
-    <>
-      <td>
-        {attendees?.length}
-      </td>
-
-      <td className="overflow-x-auto flex gap-x-2 items-center">
+    <div className="flex-none grid grid-cols-5 gap-4">
       {attendees?.map((item, index) => (
-        <span key={index} className="flex flex-shrink-0 gap-x-1">
-          <Image
-            src={item.image || ""}
-            alt="icon"
-            width={28}
-            height={28}
-            className="rounded-full w-7 h-7"
-          />
-          <span>{item.displayName}</span>
-        </span>
+        <AttendeeDetails key={index} image={item.image || ""} displayName={item.displayName || ""} period={item.period || 0} />
       ))}
-      </td>
-    </>     
+    </div>
   );
 }
 
@@ -44,102 +28,70 @@ const Attendance = async ({ userId, scheduleId }: { userId: string; scheduleId: 
   );
 }
 
-const OverallSchedule = async ({ withAttendees, userId, month, mode }: {
-  withAttendees: boolean;
-  userId?: string;
+const OverallSchedule = async ({ month, mode }: {
   month?: string;
-  mode?: string;
+  mode?: string 
 }) => {
+  const session = await auth();
+  const userId = session?.user?.id || "";
   const { caption, schedule } = await getSchedule(month);
-  
-  if (withAttendees && mode !== "edit" && !!await hasLacks(userId || "", schedule.map(item => item.id))) {
+  const hasLacks = await findLacks(userId, schedule.map(item => item.id));
+
+  if (hasLacks && mode !== "edit") {
     return (
-      <>
-        <div className="flex items-center gap-x-4 p-4 rounded-lg bg-slate-800">
-          <FaLightbulb className="text-8xl text-yellow-300" />
-          <p className="text-white">全体の日程を見るには個人の日程を入力するか、入力済みの月を選択してください。</p>
+      <div className="pt-8 flex flex-col items-center">
+        <div className="flex items-center gap-x-4 m-8 p-4 rounded-lg bg-slate-800">
+          <FaLightbulb className="text-5xl text-yellow-300" />
+          <span className="text-white">全体の日程を見るには個人の日程を入力するか、入力済みの月を選択してください。</span>
         </div>
-        <FaArrowCircleDown className="animate-bounce text-white text-2xl" />
-      </>
+        <SetMode />
+      </div>
     );
   }
-
+  
   return (
-    <div className="w-full overflow-x-auto p-2 rounded bg-white">
-      <table className="w-full text-slate-700 text-lg">
-        <caption className="p-2 bg-slate-50 text-xl">{caption}</caption>
+    <>
+      <div className="pointer-events-none fixed bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-slate-900"></div>
 
-        <thead>
-          <tr className="text-sm">
-            <th>DATE</th>
-            <th>TIMESPAN</th>
-            {withAttendees && mode !== "edit" &&
-            <>
-              <th>NUMBER</th>
-              <th>ATTENDEES</th>
-            </>}
-            {withAttendees && mode === "edit" && <th>ATTENDANCE</th>}
-            {!withAttendees && <th>DESCRIPTION</th>}
-          </tr>
-        </thead>
-
-        <tbody>
-          {schedule?.map((item, index) => 
-          <Fragment key={index}>
-            <tr className={clsx({
-              "odd:bg-slate-50 even:bg-white": item.type === "default",
-              "bg-yellow-50": item.type === "championship",
-              "bg-teal-50": item.type === "event"
-            })}>
-              <th>{item.date}</th>
-
-              <th>
-              {!!item.start && !!item.end &&
-              <span className="flex items-center justify-center">
-                <span>{item.start}</span>
-                <MdArrowRight />
-                <span>{item.end}</span>
-              </span>}
-              </th>
-
-              {withAttendees && mode !== "edit" &&
+      <div className="h-full overflow-y-auto snap-y snap-mandatory scroll-py-16 flex flex-col items-center gap-y-8 text-slate-200">
+        <div className="flex-none h-8"></div>
+        <div className="flex-none snap-start w-full flex items-center justify-around">
+          <div className="text-3xl">{caption}</div>
+          <SetMode />
+        </div>
+        {schedule?.map((item, index) => (
+          <div key={index} className={clsx("flex-none snap-start w-96 flex flex-col gap-y-4 p-8 rounded-2xl bg-slate-700", {
+            "bg-yellow-700": item.type === "championship",
+            "bg-teal-700": item.type === "event"
+          })}>
+            <div className="flex-none flex items-center">
+              <div className="grow flex flex-col gap-y-2">
+                <div>{item.date}</div>
+                {(!!item.start || !!item.end) &&
+                <div className="flex items-center">
+                  <span>{item.start}</span>
+                  <FaCaretRight />
+                  <span>{item.end}</span>
+                </div>}
+              </div>
+              {mode === "edit" ?
               <Suspense fallback={
-                <>
-                  <td></td>
-                  <td></td>
-                </>
+                <div className="w-[124px] h-[36px] rounded bg-slate-600/50 animate-pulse"></div>
               }>
-                <AttendeesList scheduleId={item.id} />
-              </Suspense>}
-
-              {withAttendees && mode === "edit" &&
+                <Attendance userId={userId} scheduleId={item.id} />
+              </Suspense> :
               <Suspense fallback={
-                <td></td>
+                <div className="w-[204px] h-[72px] rounded bg-slate-600/50 animate-pulse"></div>
               }>
-                <Attendance userId={userId || ""} scheduleId={item.id} />
+                <Attendees scheduleId={item.id} />
               </Suspense>}
-
-              {!withAttendees &&
-              <td>{item.description}</td>}
-            </tr>
-
-            {withAttendees && !!item.description && 
-            <tr className={clsx({
-              "odd:bg-slate-50 even:bg-white": item.type === "default",
-              "bg-yellow-50": item.type === "championship",
-              "bg-teal-50": item.type === "event"
-            })}>
-              <td className="h-auto px-8 py-0" colSpan={4}>
-                <span className="flex items-center gap-x-2">
-                  <MdSubdirectoryArrowRight />
-                  <span>{item.description}</span>
-                </span>
-              </td>
-            </tr>}
-          </Fragment>)}
-        </tbody>
-      </table>
-    </div>
+            </div>
+            {!!item.description && <div className="text-sm">{item.description}</div>}
+          </div>
+        ))}
+        <div className="flex-none h-full"></div>
+      </div>
+    </>
   );
 }
 

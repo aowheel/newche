@@ -16,14 +16,14 @@ const SetMonth = () => {
     }
     push(`${pathname}?${params.toString()}`, { scroll: false });
   }
-
+  
   return (
     <input
       id="month"
       type="month"
       defaultValue={searchParams.get("month") || undefined}
       onChange={(event) => {handleSearch(event.target.value)}}
-      className="fixed top-1 right-4 p-1 rounded border border-white bg-slate-900 bg-opacity-75 text-white"
+      className="rounded bg-slate-200 text-slate-950"
     />
   );
 }

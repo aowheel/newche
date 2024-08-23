@@ -2,6 +2,7 @@
 
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 
 export default async function handleUserDetails(prevState: {
@@ -17,25 +18,36 @@ export default async function handleUserDetails(prevState: {
   } else {
     try {
       const session = await auth();
-      const user = await prisma.user.findFirst({
+      const detected = await prisma.user.findFirst({
         where: {
           displayName: displayName.data,
           id: {
-            not: session?.user?.id,
+            not: session?.user?.id
           }
         },
         select: {
-          id: true,
-        },
+          id: true
+        }
       });
-      if (!!user) return { error: "この表示名は使用できません。" }
+      if (!!detected) return { error: "この表示名は使用できません。" }
+      const { displayName: isNotFirst } = await prisma.user.findUnique({
+        where: {
+          id: session?.user?.id
+        },
+        select: {
+          displayName: true
+        }
+      }) || { displayName: null };
       await prisma.user.update({
         data: {
           displayName: displayName.data,
-          period: period.data,
+          period: period.data
         },
-        where: { id: session?.user.id }
+        where: {
+          id: session?.user?.id
+        }
       });
+      if (!isNotFirst) redirect("/internal");
       return { ok: "変更を反映しました。" };
     } catch(error) {
       throw error;

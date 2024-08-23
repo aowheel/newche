@@ -4,16 +4,26 @@ import { useActionState } from "react";
 import deleteOverallSchedule from "./action";
 import { inter } from "@/lib/fonts";
 
-const DeleteOverallSchedule = ({ date }: { date: string }) => {
+const DeleteOverallSchedule = () => {
   const initialState: {
     ok?: string, error?: string
   } = {};
   const [message, formAction, isPending] = useActionState(deleteOverallSchedule, initialState);
   return (
-    <form action={formAction} className={`w-full ${inter.className} p-4 flex flex-col items-center gap-y-4 rounded-lg bg-red-200 text-slate-700`}>
+    <form action={formAction} className={`${inter.className} flex-none w-full p-8 flex flex-col items-center gap-y-4 rounded-lg bg-red-200 text-slate-700`}>
       <p className="text-2xl">Delete</p>
 
-      <input type="date" name="date" defaultValue={date} required />
+      <input type="date" name="date" required />
+
+      <div className="flex gap-x-2">
+        <label htmlFor="start">Start</label>
+        <input type="time" id="start" name="start" />
+      </div>
+
+      <div className="flex gap-x-2">
+        <label htmlFor="end">End</label>
+        <input type="time" id="end" name="end" />
+      </div>
 
       {!!message.ok && <p>{message.ok}</p>}
       {!!message.error && <p>{message.error}</p>}
