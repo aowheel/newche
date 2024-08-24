@@ -12,7 +12,7 @@ const SignIn = () => {
   return (
     <>
       <form action={formAction}>
-        <button type="submit" disabled={isPending} className={clsx(`flex items-center justify-center gap-x-2 px-4 py-2 rounded-lg bg-white text-slate-500 ${inter.className}`, {
+        <button type="submit" disabled={isPending} className={clsx(`flex items-center justify-center gap-x-2 px-4 py-2 rounded-lg bg-slate-800 text-slate-200 ${inter.className}`, {
           "bg-opacity-75 text-opacity-75": isPending
         })}>
           {

@@ -1,5 +1,6 @@
 import { LoadingDots } from "@/components/Common";
 import OverallSchedule from "@/components/OverallSchedule";
+import Tutorial from "@/components/Tutorial";
 import { Suspense } from "react";
 const Page = async ({ searchParams }: {
   searchParams?: {
@@ -17,6 +18,7 @@ const Page = async ({ searchParams }: {
       </div>
     }>
       <OverallSchedule month={month} mode={mode} />
+      <Tutorial />
     </Suspense>
   );
 }

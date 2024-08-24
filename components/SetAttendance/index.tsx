@@ -28,7 +28,7 @@ const SetAttendance = ({ userId, scheduleId, attendance }: { userId: string; sch
           htmlFor={`yes-${scheduleId}`}
           className={clsx("transition-colors duration-300", {
             "text-slate-200": attendanceState === "yes",
-            "text-slate-600/50": attendanceState !== "yes",
+            "text-slate-500/75": attendanceState !== "yes",
             "text-teal-200": attendanceState === "yes" && isPending
           })}
         >
@@ -51,7 +51,7 @@ const SetAttendance = ({ userId, scheduleId, attendance }: { userId: string; sch
           htmlFor={`no-${scheduleId}`}
           className={clsx("transition-colors duration-300", {
             "text-slate-200": attendanceState === "no",
-            "text-slate-600/50": attendanceState !== "no",
+            "text-slate-500/75": attendanceState !== "no",
             "text-teal-200": attendanceState === "no" && isPending
           })}
         >
@@ -73,7 +73,7 @@ const SetAttendance = ({ userId, scheduleId, attendance }: { userId: string; sch
           htmlFor={`undecided-${scheduleId}`}
           className={clsx("transition-colors duration-300", {
             "text-slate-200": attendanceState === "undecided",
-            "text-slate-600/50": attendanceState !== "undecided",
+            "text-slate-500/75": attendanceState !== "undecided",
             "text-teal-200": attendanceState === "undecided" && isPending
           })}
         >

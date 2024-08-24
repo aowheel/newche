@@ -12,7 +12,7 @@ const Navigator = () => {
   return (
     <>
       <div className={clsx({
-        "fixed top-0 left-0 w-full p-2 flex items-center justify-between shadow-md shadow-slate-950/75 bg-slate-950/75 backdrop-blur-sm": !isOpen
+        "fixed top-0 left-0 w-full p-2 flex items-center justify-between shadow-md shadow-slate-900/75 bg-slate-900/75 backdrop-blur-sm": !isOpen
       })}>
         <button type="button" onClick={() => setIsOpen(!isOpen)} className={clsx("text-slate-200", {
           "fixed inset-0 bg-slate-950/75 backdrop-blur-sm": isOpen

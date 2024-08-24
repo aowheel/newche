@@ -87,7 +87,7 @@ const Comments = async ({ scheduleId }: { scheduleId: number }) => {
               />
               <span className="text-xs">{user.displayName || ""}</span>
             </div>
-            <span className="fle-none px-2 py-1 rounded-xl bg-slate-700 break-all">{item.comment}</span>
+            <span className="fle-none px-2 py-1 rounded-2xl bg-slate-700 break-all">{item.comment}</span>
           </div>
         );
       })}
@@ -116,8 +116,7 @@ const SevenDaysSchedule = async () => {
   return (
     <div className="py-16 flex flex-col gap-y-8">
       {schedule?.map((item, index) => (
-        <div key={index} className={clsx("flex-none mx-4 p-4 border-2 flex flex-col gap-y-4 text-slate-200", {
-          "border-slate-200": item.type === "default",
+        <div key={index} className={clsx("flex-none mx-4 p-4 border-2 border-slate-200 flex flex-col gap-y-4 text-slate-200", {
           "border-teal-200": item.type === "event",
           "border-yellow-200": item.type === "chsmpionship"
         })}>

@@ -13,7 +13,7 @@ export const contentType = 'image/png'
 
 export default async function Image() {
   const orbitron = fetch(
-    new URL('../../public/fonts/Orbitron-Regular.ttf', import.meta.url)
+    new URL('../public/fonts/Orbitron-Regular.ttf', import.meta.url)
   ).then((res) => res.arrayBuffer())
   
   const latest = await getLatestSchedule();

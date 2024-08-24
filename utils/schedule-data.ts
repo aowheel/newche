@@ -199,10 +199,7 @@ export const getAttendance = async (userId: string, scheduleId: number) => {
 export const getComments = async (scheduleId: number) => {
   return await prisma.comment.findMany({
     where: {
-      id: scheduleId
-    },
-    orderBy: {
-      createdAt: "asc"
+      scheduleId: scheduleId
     },
     select: {
       userId: true,

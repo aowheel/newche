@@ -5,6 +5,7 @@ import { ReactNode } from "react";
 import Navigator from "@/components/Navigator";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://newche.vercel.app"),
   title: "Newche | An app for SCI Cycle-ball Team",
   description: "Newche is an app that makes it easy to share SCI Cycle-ball Team schedule."
 };

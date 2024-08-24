@@ -17,7 +17,7 @@ export const LoadingDots = ({ text }: { text: string }) => {
   useEffect(() => {
     const interval = setInterval(() => {
       setDotCount(prevCount => (prevCount+1)%4);
-    }, 500);
+    }, 200);
     return () => clearInterval(interval)
   }, []);
 

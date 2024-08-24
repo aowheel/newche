@@ -51,7 +51,7 @@ const OverallSchedule = async ({ month, mode }: {
   
   return (
     <>
-      <div className="pointer-events-none fixed bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-slate-900"></div>
+      <div className="pointer-events-none fixed bottom-0 left-0 w-full h-1/5 bg-gradient-to-t from-slate-900"></div>
 
       <div className="h-full overflow-y-auto snap-y snap-mandatory scroll-py-16 flex flex-col items-center gap-y-8 text-slate-200">
         <div className="flex-none h-8"></div>
@@ -60,9 +60,9 @@ const OverallSchedule = async ({ month, mode }: {
           <SetMode />
         </div>
         {schedule?.map((item, index) => (
-          <div key={index} className={clsx("flex-none snap-start w-96 flex flex-col gap-y-4 p-8 rounded-2xl bg-slate-700", {
-            "bg-yellow-700": item.type === "championship",
-            "bg-teal-700": item.type === "event"
+          <div key={index} className={clsx("flex-none snap-start w-96 flex flex-col gap-y-4 p-8 rounded-2xl bg-slate-600", {
+            "bg-yellow-600": item.type === "championship",
+            "bg-teal-600": item.type === "event"
           })}>
             <div className="flex-none flex items-center">
               <div className="grow flex flex-col gap-y-2">

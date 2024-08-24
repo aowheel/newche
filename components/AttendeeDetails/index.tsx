@@ -24,8 +24,8 @@ const AttendeeDetails = ({image, displayName, period}: {
       <div className="relative">
         {isOpen &&
         <>
-          <div className="absolute top-full left-0 translate-x-2 translate-y-1 w-0 h-0 border-x-4 border-x-transparent border-b-4 border-b-slate-400"></div>
-          <div className="absolute top-full left-0 px-2 translate-y-2 rounded flex flex-col shadow shadow-slate-400 bg-slate-400 font-medium text-sm text-slate-700">
+          <div className="absolute top-full left-0 translate-x-2 translate-y-1 w-0 h-0 border-x-4 border-x-transparent border-b-4 border-b-slate-300"></div>
+          <div className="absolute top-full left-0 px-2 translate-y-2 rounded flex flex-col bg-slate-300 font-medium text-sm text-slate-800">
             {!!period &&
             <div className="whitespace-nowrap">{period}期</div>}
             <div className="whitespace-nowrap">{displayName}</div>
