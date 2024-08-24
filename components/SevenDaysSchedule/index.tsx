@@ -122,9 +122,12 @@ const SevenDaysSchedule = async () => {
         })}>
           <div className="flex-none flex items-center text-xl">
             <span className="mr-4">{item.date}</span>
-            <span>{item.start}</span>
-            <FaCaretRight />
-            <span>{item.end}</span>
+            {(!!item.start || !!item.end) &&
+            <>
+              <span>{item.start}</span>
+              <FaCaretRight />
+              <span>{item.end}</span>
+            </>}
           </div>
           {!!item.description &&
           <span>{item.description}</span>}

@@ -16,7 +16,7 @@ const SetComments = ({ userId, scheduleId }: {
     <div className="flex-none p-2 border-t border-dashed border-slate-700 flex flex-col items-end gap-y-2">
       {!!sentComment.length &&
       sentComment.map((item, index) => (
-        <div key={index} className="flex-none px-2 py-1 rounded-xl bg-teal-100 font-medium text-slate-800 break-all">{item}</div>
+        <div key={index} className="flex-none px-2 py-1 rounded-2xl bg-teal-100 font-medium text-slate-800 break-all">{item}</div>
       ))}
       <div className="flex-none w-full flex items-center gap-x-2">
         <textarea
