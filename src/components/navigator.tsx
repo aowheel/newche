@@ -88,7 +88,7 @@ export default function Navigator({ sub }: { sub: string }) {
 						</PopoverTrigger>
 						<PopoverContent>
 							<button
-								className="w-full flex flex-col p-1 rounded hover:bg-slate-100 outline-none"
+								className="w-full flex flex-col p-1 rounded hover:bg-slate-100 outline-hidden"
 								onClick={() =>
 									startTransition(() => {
 										router.push("/manage");
@@ -103,7 +103,7 @@ export default function Navigator({ sub }: { sub: string }) {
 								</span>
 							</button>
 							<button
-								className="w-full flex flex-col p-1 rounded hover:bg-slate-100 outline-none"
+								className="w-full flex flex-col p-1 rounded hover:bg-slate-100 outline-hidden"
 								onClick={() =>
 									startTransition(() => {
 										router.push("/login?status=re");
@@ -118,7 +118,7 @@ export default function Navigator({ sub }: { sub: string }) {
 								</span>
 							</button>
 							<button
-								className="w-full flex flex-col p-1 rounded hover:bg-slate-100 outline-none"
+								className="w-full flex flex-col p-1 rounded hover:bg-slate-100 outline-hidden"
 								onClick={() =>
 									startTransition(() => {
 										router.push("/friend");
@@ -133,7 +133,7 @@ export default function Navigator({ sub }: { sub: string }) {
 								</span>
 							</button>
 							<button
-								className="w-full flex flex-col p-1 rounded hover:bg-slate-100 outline-none"
+								className="w-full flex flex-col p-1 rounded hover:bg-slate-100 outline-hidden"
 								onClick={() =>
 									startTransition(() => {
 										router.push("/about");
