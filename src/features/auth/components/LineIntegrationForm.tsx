@@ -1,5 +1,6 @@
 "use client";
 
+import { Button, Spinner } from "@heroui/react";
 import type { FC } from "react";
 import { useFormStatus } from "react-dom";
 import { connectWithLine } from "../actions";
@@ -16,8 +17,13 @@ const SubmitButton: FC = () => {
   const { pending } = useFormStatus();
 
   return (
-    <button type="submit" disabled={pending}>
-      {pending ? "Connecting..." : "Connect with LINE"}
-    </button>
+    <Button type="submit" isPending={pending} isDisabled={pending} fullWidth>
+      {({ isPending }) => (
+        <>
+          {isPending ? <Spinner color="current" size="sm" /> : null}
+          {isPending ? "Connecting..." : "Connect with LINE"}
+        </>
+      )}
+    </Button>
   );
 };

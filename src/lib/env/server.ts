@@ -1,3 +1,4 @@
+"server-only";
 import z from "zod";
 import { clientSchema, serverSchema } from "./schemas";
 

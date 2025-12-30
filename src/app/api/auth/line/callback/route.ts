@@ -8,45 +8,56 @@ export async function GET(request: NextRequest) {
   const next = request.nextUrl.searchParams.get("next");
   const safeNext = next?.startsWith("/dashboard") ? next : "/dashboard";
 
-  const errorRedirectUrl = new URL("/dashboard/integrations/line", request.url);
-  errorRedirectUrl.searchParams.set("next", safeNext);
+  const redirectWithError = (error?: unknown) => {
+    if (error) {
+      console.error(error);
+    }
+    const errorRedirectUrl = new URL("/dashboard/integration", request.url);
+    errorRedirectUrl.searchParams.set("next", safeNext);
+    errorRedirectUrl.searchParams.set("error", "integration_failed");
+    return NextResponse.redirect(errorRedirectUrl);
+  };
 
   const state = request.nextUrl.searchParams.get("state");
-  if (!state || state !== request.cookies.get("line_oauth_state")?.value) {
-    errorRedirectUrl.searchParams.set("error", "invalid_state");
-    return NextResponse.redirect(errorRedirectUrl);
+  const storedState = request.cookies.get("line_oauth_state")?.value;
+  if (!state || !storedState || state !== storedState) {
+    return redirectWithError();
   }
 
   const code = request.nextUrl.searchParams.get("code");
-  if (!code) {
-    errorRedirectUrl.searchParams.set("error", "missing_code");
-    return NextResponse.redirect(errorRedirectUrl);
-  }
-
   const codeVerifier = request.cookies.get("line_oauth_code_verifier")?.value;
-  if (!codeVerifier) {
-    errorRedirectUrl.searchParams.set("error", "missing_code_verifier");
-    return NextResponse.redirect(errorRedirectUrl);
+  if (!code || !codeVerifier) {
+    return redirectWithError();
   }
 
-  const tokenResponse = await fetch("https://api.line.me/oauth2/v2.1/token", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({
-      grant_type: "authorization_code",
-      code,
-      redirect_uri: `${env.NEXT_PUBLIC_APP_URL}/api/auth/line/callback`,
-      client_id: env.NEXT_PUBLIC_LINE_CHANNEL_ID,
-      client_secret: env.LINE_CHANNEL_SECRET,
-      code_verifier: codeVerifier,
-    }),
-  });
+  let tokenResponse: Response;
+  try {
+    tokenResponse = await fetch("https://api.line.me/oauth2/v2.1/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        grant_type: "authorization_code",
+        code,
+        redirect_uri: `${env.NEXT_PUBLIC_APP_URL}/api/auth/line/callback`,
+        client_id: env.NEXT_PUBLIC_LINE_CHANNEL_ID,
+        client_secret: env.LINE_CHANNEL_SECRET,
+        code_verifier: codeVerifier,
+      }),
+    });
+  } catch (error) {
+    return redirectWithError(error);
+  }
+
+  let tokenBody: unknown;
+  try {
+    tokenBody = await tokenResponse.json();
+  } catch (error) {
+    return redirectWithError(error);
+  }
   if (!tokenResponse.ok) {
-    console.error(await tokenResponse.json());
-    errorRedirectUrl.searchParams.set("error", "invalid_code");
-    return NextResponse.redirect(errorRedirectUrl);
+    return redirectWithError(tokenBody);
   }
 
   const { data: tokenData, error: tokenError } = z
@@ -55,40 +66,46 @@ export async function GET(request: NextRequest) {
       access_token: z.string(),
       refresh_token: z.string(),
     })
-    .safeParse(await tokenResponse.json());
+    .safeParse(tokenBody);
   if (tokenError) {
-    console.error(tokenError);
-    errorRedirectUrl.searchParams.set("error", "invalid_token");
-    return NextResponse.redirect(errorRedirectUrl);
+    return redirectWithError(tokenError.message);
   }
 
-  const verifyResponse = await fetch("https://api.line.me/oauth2/v2.1/verify", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({
-      id_token: tokenData.id_token,
-      client_id: env.NEXT_PUBLIC_LINE_CHANNEL_ID,
-    }),
-  });
+  let verifyResponse: Response;
+  try {
+    verifyResponse = await fetch("https://api.line.me/oauth2/v2.1/verify", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        id_token: tokenData.id_token,
+        client_id: env.NEXT_PUBLIC_LINE_CHANNEL_ID,
+      }),
+    });
+  } catch (error) {
+    return redirectWithError(error);
+  }
+
+  let verifyBody: unknown;
+  try {
+    verifyBody = await verifyResponse.json();
+  } catch (error) {
+    return redirectWithError(error);
+  }
   if (!verifyResponse.ok) {
-    console.error(await verifyResponse.json());
-    errorRedirectUrl.searchParams.set("error", "verification_failed");
-    return NextResponse.redirect(errorRedirectUrl);
+    return redirectWithError(verifyBody);
   }
 
   const { data: verifyData, error: verifyError } = z
     .looseObject({
       sub: z.string(),
       name: z.string().optional(),
-      picture: z.string().url().optional(),
+      picture: z.url().optional(),
     })
-    .safeParse(await verifyResponse.json());
+    .safeParse(verifyBody);
   if (verifyError) {
-    console.error(verifyError);
-    errorRedirectUrl.searchParams.set("error", "invalid_id_token");
-    return NextResponse.redirect(errorRedirectUrl);
+    return redirectWithError(verifyError.message);
   }
 
   const supabase = await createClient();
@@ -98,8 +115,7 @@ export async function GET(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    errorRedirectUrl.searchParams.set("error", "not_authenticated");
-    return NextResponse.redirect(errorRedirectUrl);
+    return redirectWithError();
   }
 
   const { error: upsertProfileError } = await supabaseAdmin
@@ -113,9 +129,7 @@ export async function GET(request: NextRequest) {
       { ignoreDuplicates: true },
     );
   if (upsertProfileError) {
-    console.error(upsertProfileError.message);
-    errorRedirectUrl.searchParams.set("error", "failed_to_update_profile");
-    return NextResponse.redirect(errorRedirectUrl);
+    return redirectWithError(upsertProfileError.message);
   }
 
   const { error: upsertTokenError } = await supabaseAdmin
@@ -127,9 +141,7 @@ export async function GET(request: NextRequest) {
       profile_id: user.id,
     });
   if (upsertTokenError) {
-    console.error(upsertTokenError.message);
-    errorRedirectUrl.searchParams.set("error", "failed_to_store_token");
-    return NextResponse.redirect(errorRedirectUrl);
+    return redirectWithError(upsertTokenError.message);
   }
 
   const redirectUrl = new URL(safeNext, request.url);

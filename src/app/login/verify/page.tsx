@@ -1,4 +1,4 @@
-import { OtpForm } from "@/features/auth/components/OtpForm";
+import { VerifyOtpForm } from "@/features/auth/components/VerifyOtpForm";
 
 export default async function VerifyPage(props: {
   searchParams: Promise<Record<string, unknown>>;
@@ -8,5 +8,5 @@ export default async function VerifyPage(props: {
   const email =
     typeof searchParams.email === "string" ? searchParams.email : "";
 
-  return <OtpForm next={next} email={email} />;
+  return <VerifyOtpForm next={next} email={email} />;
 }

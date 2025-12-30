@@ -6,13 +6,14 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "check": "biome check",
+    "check": "biome check && tsc",
     "check:write": "biome check --write"
   },
   "dependencies": {
     "@heroui/react": "3.0.0-beta.3",
     "@heroui/styles": "3.0.0-beta.3",
     "@line/bot-sdk": "^10.5.0",
+    "@sentry/nextjs": "^10.32.1",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.89.0",
     "next": "16.1.1",
