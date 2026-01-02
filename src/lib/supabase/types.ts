@@ -37,23 +37,23 @@ export type Database = {
       line_accounts: {
         Row: {
           access_token: string | null;
-          profile_id: string;
+          id: string;
+          profile_id: string | null;
           refresh_token: string | null;
-          sub: string;
           updated_at: string;
         };
         Insert: {
           access_token?: string | null;
-          profile_id: string;
+          id: string;
+          profile_id?: string | null;
           refresh_token?: string | null;
-          sub: string;
           updated_at?: string;
         };
         Update: {
           access_token?: string | null;
-          profile_id?: string;
+          id?: string;
+          profile_id?: string | null;
           refresh_token?: string | null;
-          sub?: string;
           updated_at?: string;
         };
         Relationships: [
@@ -65,6 +65,48 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      line_accounts_groups: {
+        Row: {
+          account_id: string;
+          group_id: string;
+        };
+        Insert: {
+          account_id: string;
+          group_id: string;
+        };
+        Update: {
+          account_id?: string;
+          group_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "line_accounts_groups_account_id_fkey";
+            columns: ["account_id"];
+            isOneToOne: false;
+            referencedRelation: "line_accounts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "line_accounts_groups_group_id_fkey";
+            columns: ["group_id"];
+            isOneToOne: false;
+            referencedRelation: "line_groups";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      line_groups: {
+        Row: {
+          id: string;
+        };
+        Insert: {
+          id: string;
+        };
+        Update: {
+          id?: string;
+        };
+        Relationships: [];
       };
       profiles: {
         Row: {

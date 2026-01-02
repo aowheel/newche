@@ -1,10 +1,16 @@
+import z from "zod";
 import { SignInForm } from "@/features/auth/components/SignInForm";
 
 export default async function LoginPage(props: {
   searchParams: Promise<Record<string, unknown>>;
 }) {
   const searchParams = await props.searchParams;
-  const next = typeof searchParams.next === "string" ? searchParams.next : "";
+  const { next, error } = z
+    .looseObject({
+      next: z.string().optional(),
+      error: z.string().optional(),
+    })
+    .parse(searchParams);
 
-  return <SignInForm next={next} />;
+  return <SignInForm nextPath={next} queryError={error} />;
 }

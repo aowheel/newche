@@ -6,9 +6,7 @@ export async function GET(request: NextRequest) {
   const safeNext = next?.startsWith("/dashboard") ? next : "/dashboard";
 
   const redirectWithError = (error?: unknown) => {
-    if (error) {
-      console.error(error);
-    }
+    if (error) console.error(error);
     const errorRedirectUrl = new URL("/login", request.url);
     errorRedirectUrl.searchParams.set("next", safeNext);
     errorRedirectUrl.searchParams.set("error", "auth_failed");

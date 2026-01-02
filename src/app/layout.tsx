@@ -13,8 +13,10 @@ const inter = Inter({ subsets: ["latin"] });
 export default async function RootLayout(props: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} antialiased`}>
-        <main>{props.children}</main>
+      <body
+        className={`${inter.className} antialiased bg-background min-h-dvh flex flex-col`}
+      >
+        {props.children}
       </body>
     </html>
   );

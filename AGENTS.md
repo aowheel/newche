@@ -2,8 +2,11 @@
 
 ## Project Structure & Module Organization
 - `src/app` contains the Next.js App Router routes, layouts, and UI entry points.
+- `src/app/**/route.ts` contains Route Handlers (API endpoints and webhooks).
 - `src/features` holds feature-focused modules and components.
-- `src/lib` is for shared utilities and integrations (e.g., API clients).
+- `src/lib/env` holds environment variable schemas and helpers.
+- `src/lib` is for shared utilities and connections (e.g., API clients).
+- `src/proxy.ts` contains request auth/redirect logic for protected routes.
 - `public` stores static assets served at the site root.
 - `supabase/migrations` contains database migration SQL; `supabase/config.toml` holds local config.
 
@@ -12,14 +15,15 @@ Use `pnpm` (lockfile is `pnpm-lock.yaml`).
 - `pnpm dev`: run the Next.js dev server.
 - `pnpm build`: create a production build.
 - `pnpm start`: start the production server after a build.
-- `pnpm check`: run Biome checks (no write).
-- `pnpm check:write`: run Biome with auto-fixes and formatting.
+- `pnpm check`: run Biome checks (no write) and TypeScript (`tsc`).
+- `pnpm check:write`: run Biome with auto-fixes and formatting (no `tsc`).
 - After implementing changes, run `pnpm check`.
 
 ## Coding Style & Naming Conventions
 - Formatting and linting are handled by Biome (`biome.json`). Run `pnpm check` (or `pnpm check:write` for auto-fixes) before commits.
 - Use TypeScript and follow existing file naming conventions in `src/`.
 - Prefer descriptive component and module names aligned with feature boundaries.
+- UI components use HeroUI v3 beta (`@heroui/react`, `@heroui/styles`).
 - Zod is v4. Prefer top-level string format helpers (method forms like `z.string().email()` are deprecated).
   - Examples: `z.email()`, `z.url()`, `z.uuid()`, `z.guid()`, `z.ipv4()`, `z.ipv6()`, `z.cidrv4()`, `z.cidrv6()`
   - ISO helpers: `z.iso.date()`, `z.iso.time()`, `z.iso.datetime()`, `z.iso.duration()`

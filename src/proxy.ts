@@ -3,11 +3,13 @@ import { type NextRequest, NextResponse } from "next/server";
 import { env } from "./lib/env/server";
 
 export const config = {
-  matcher: ["/login/:path*", "/dashboard/:path*"],
+  matcher: ["/login/:path*", "/connect/:path*", "/dashboard/:path*"],
 };
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
+  const { url, nextUrl } = request;
+  const { pathname, searchParams } = nextUrl;
 
   const supabase = createServerClient(
     env.NEXT_PUBLIC_SUPABASE_URL,
@@ -29,25 +31,54 @@ export async function proxy(request: NextRequest) {
   );
 
   const { data } = await supabase.auth.getClaims();
-  const isLoginPath = request.nextUrl.pathname.startsWith("/login");
+  const isAuthenticated = !!data;
+  const isLineConnected = !!data?.claims.user_metadata?.line_connected;
+  const next = searchParams.get("next");
+  const isLoginPath = pathname.startsWith("/login");
+  const isConnectPath = pathname.startsWith("/connect");
+  const isDashboardPath = pathname.startsWith("/dashboard");
+  const isLinePath = pathname.startsWith("/dashboard/line");
 
-  if (data) {
-    if (isLoginPath) {
-      const next = request.nextUrl.searchParams.get("next");
-      const safeNext = next?.startsWith("/dashboard") ? next : "/dashboard";
-      const redirectUrl = new URL(safeNext, request.url);
-      redirectUrl.pathname = safeNext;
-      return NextResponse.redirect(redirectUrl);
-    } else {
-      return response;
+  const redirectWithNext = (path: string, next?: string) => {
+    const redirectUrl = new URL(path, url);
+    if (next) {
+      redirectUrl.searchParams.set("next", next);
     }
-  } else {
-    if (isLoginPath) {
-      return response;
-    } else {
-      const redirectUrl = new URL("/login", request.url);
-      redirectUrl.searchParams.set("next", request.nextUrl.pathname);
-      return NextResponse.redirect(redirectUrl);
+    return NextResponse.redirect(redirectUrl);
+  };
+
+  if (isLoginPath) {
+    if (isAuthenticated) {
+      return redirectWithNext(
+        next?.startsWith("/dashboard") ? next : "/dashboard",
+      );
     }
+    return response;
   }
+
+  if (isConnectPath) {
+    if (!isAuthenticated) {
+      return redirectWithNext("/login", pathname);
+    }
+    return response;
+  }
+
+  if (isLinePath) {
+    if (!isAuthenticated) {
+      return redirectWithNext("/login", pathname);
+    }
+    if (!isLineConnected) {
+      return redirectWithNext("/connect", pathname);
+    }
+    return response;
+  }
+
+  if (isDashboardPath) {
+    if (!isAuthenticated) {
+      return redirectWithNext("/login", pathname);
+    }
+    return response;
+  }
+
+  return response;
 }

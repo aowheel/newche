@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { type NextRequest, NextResponse } from "next/server";
 import z from "zod";
 import { env } from "@/lib/env/server";
@@ -5,24 +6,36 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
-  const next = request.nextUrl.searchParams.get("next");
-  const safeNext = next?.startsWith("/dashboard") ? next : "/dashboard";
-
-  const redirectWithError = (error?: unknown) => {
-    if (error) {
-      console.error(error);
+  const state = request.nextUrl.searchParams.get("state");
+  let next: string | undefined;
+  if (state) {
+    const [payloadBase64, signature] = state.split(".");
+    if (payloadBase64 && signature) {
+      const expectedSignature = crypto
+        .createHmac("sha256", env.LINE_OAUTH_STATE_SECRET)
+        .update(payloadBase64)
+        .digest("base64url");
+      if (
+        signature.length === expectedSignature.length &&
+        crypto.timingSafeEqual(
+          Buffer.from(signature),
+          Buffer.from(expectedSignature),
+        )
+      ) {
+        next = Buffer.from(payloadBase64, "base64url").toString("utf8");
+      }
     }
-    const errorRedirectUrl = new URL("/dashboard/integration", request.url);
-    errorRedirectUrl.searchParams.set("next", safeNext);
-    errorRedirectUrl.searchParams.set("error", "integration_failed");
+  }
+  const safeNext = next?.startsWith("/dashboard/line")
+    ? next
+    : "/dashboard/line";
+  const errorRedirectUrl = new URL("/connect", request.url);
+  errorRedirectUrl.searchParams.set("next", safeNext);
+  errorRedirectUrl.searchParams.set("error", "line_connect_failed");
+  const redirectWithError = (error?: unknown) => {
+    if (error) console.error(error);
     return NextResponse.redirect(errorRedirectUrl);
   };
-
-  const state = request.nextUrl.searchParams.get("state");
-  const storedState = request.cookies.get("line_oauth_state")?.value;
-  if (!state || !storedState || state !== storedState) {
-    return redirectWithError();
-  }
 
   const code = request.nextUrl.searchParams.get("code");
   const codeVerifier = request.cookies.get("line_oauth_code_verifier")?.value;
@@ -40,9 +53,9 @@ export async function GET(request: NextRequest) {
       body: new URLSearchParams({
         grant_type: "authorization_code",
         code,
-        redirect_uri: `${env.NEXT_PUBLIC_APP_URL}/api/auth/line/callback`,
-        client_id: env.NEXT_PUBLIC_LINE_CHANNEL_ID,
-        client_secret: env.LINE_CHANNEL_SECRET,
+        redirect_uri: `${env.NEXT_PUBLIC_APP_URL}/auth/line/callback`,
+        client_id: env.NEXT_PUBLIC_LINE_LOGIN_CHANNEL_ID,
+        client_secret: env.LINE_LOGIN_CHANNEL_SECRET,
         code_verifier: codeVerifier,
       }),
     });
@@ -80,7 +93,7 @@ export async function GET(request: NextRequest) {
       },
       body: new URLSearchParams({
         id_token: tokenData.id_token,
-        client_id: env.NEXT_PUBLIC_LINE_CHANNEL_ID,
+        client_id: env.NEXT_PUBLIC_LINE_LOGIN_CHANNEL_ID,
       }),
     });
   } catch (error) {
@@ -109,7 +122,6 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = await createClient();
-  const supabaseAdmin = createAdminClient();
 
   const {
     data: { user },
@@ -117,6 +129,22 @@ export async function GET(request: NextRequest) {
   if (!user) {
     return redirectWithError();
   }
+
+  const { error: updateUserError } = await supabase.auth.updateUser({
+    data: {
+      line_connected: true,
+    },
+  });
+  if (updateUserError) {
+    return redirectWithError(updateUserError.message);
+  }
+
+  const { error: refreshError } = await supabase.auth.refreshSession();
+  if (refreshError) {
+    return redirectWithError(refreshError.message);
+  }
+
+  const supabaseAdmin = createAdminClient();
 
   const { error: upsertProfileError } = await supabaseAdmin
     .from("profiles")
@@ -135,7 +163,7 @@ export async function GET(request: NextRequest) {
   const { error: upsertTokenError } = await supabaseAdmin
     .from("line_accounts")
     .upsert({
-      sub: verifyData.sub,
+      id: verifyData.sub,
       access_token: tokenData.access_token,
       refresh_token: tokenData.refresh_token,
       profile_id: user.id,

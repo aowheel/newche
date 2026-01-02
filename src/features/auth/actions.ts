@@ -5,10 +5,11 @@ import { cookies } from "next/headers";
 import { RedirectType, redirect } from "next/navigation";
 import z from "zod";
 import { env } from "@/lib/env/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export type SignInState = {
-  message?: string;
+  formError: string;
   email: {
     value: string;
     errors?: string[];
@@ -32,7 +33,7 @@ export const signIn = async (
     .safeParse(formData.get("email"));
   if (emailError) {
     return {
-      message: "Validation failed",
+      formError: "Validation failed",
       email: {
         value: "",
         errors: emailError.issues.map((i) => i.message),
@@ -41,16 +42,22 @@ export const signIn = async (
   }
 
   const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) redirect(next);
+
   const { error: signInError } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: `${env.NEXT_PUBLIC_APP_URL}/api/auth/email/callback?${searchParams}`,
+      emailRedirectTo: `${env.NEXT_PUBLIC_APP_URL}/auth/email/callback?${searchParams}`,
     },
   });
   if (signInError) {
     console.error(signInError.message);
     return {
-      message: "Sending OTP failed",
+      formError: "Sending OTP failed",
       email: {
         value: "",
       },
@@ -62,7 +69,7 @@ export const signIn = async (
 };
 
 export type VerifyOtpState = {
-  message?: string;
+  formError: string;
   first?: boolean;
   email: {
     value: string;
@@ -90,7 +97,7 @@ export const verifyOtp = async (
     .safeParse(formData.get("email"));
   if (emailError) {
     return {
-      message: "Validation failed",
+      formError: "Validation failed",
       email: {
         value: "",
         editable: true,
@@ -110,7 +117,7 @@ export const verifyOtp = async (
     .safeParse(formData.get("code"));
   if (codeError) {
     return {
-      message: "Validation failed",
+      formError: "Validation failed",
       email: {
         value: email,
         editable: false,
@@ -131,7 +138,7 @@ export const verifyOtp = async (
   if (verifyOtpError) {
     console.error(verifyOtpError.message);
     return {
-      message: "OTP verification failed",
+      formError: "OTP verification failed",
       email: {
         value: email,
         editable: true,
@@ -147,12 +154,12 @@ export const verifyOtp = async (
 
 export const signOut = async () => {
   const supabase = await createClient();
-  await supabase.auth.signOut();
+  const { data: user } = await supabase.auth.getUser();
+  if (user) await supabase.auth.signOut();
   redirect("/");
 };
 
-export const connectWithLine = async () => {
-  const state = crypto.randomBytes(16).toString("hex");
+export const connectWithLine = async (formData: FormData) => {
   const codeVerifier = crypto.randomBytes(32).toString("base64url");
   const codeChallenge = crypto
     .createHash("sha256")
@@ -165,18 +172,61 @@ export const connectWithLine = async () => {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax" as const,
   };
-  cookieStore.set("line_oauth_state", state, cookieOptions);
   cookieStore.set("line_oauth_code_verifier", codeVerifier, cookieOptions);
+
+  const next = formData.get("next");
+  const safeNext = z
+    .string()
+    .refine((path) => path.startsWith("/dashboard/line"))
+    .catch("/dashboard/line")
+    .parse(next);
+  const statePayloadBase64 = Buffer.from(safeNext).toString("base64url");
+  const stateSignature = crypto
+    .createHmac("sha256", env.LINE_OAUTH_STATE_SECRET)
+    .update(statePayloadBase64)
+    .digest("base64url");
 
   const params = new URLSearchParams({
     response_type: "code",
-    client_id: env.NEXT_PUBLIC_LINE_CHANNEL_ID,
-    redirect_uri: `${env.NEXT_PUBLIC_APP_URL}/api/auth/line/callback`,
-    state,
+    client_id: env.NEXT_PUBLIC_LINE_LOGIN_CHANNEL_ID,
+    redirect_uri: `${env.NEXT_PUBLIC_APP_URL}/auth/line/callback`,
+    state: `${statePayloadBase64}.${stateSignature}`,
     scope: "profile openid",
     code_challenge: codeChallenge,
     code_challenge_method: "S256",
   });
 
   redirect(`https://access.line.me/oauth2/v2.1/authorize?${params}`);
+};
+
+export const disconnectFromLine = async () => {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const supabaseAdmin = createAdminClient();
+
+  const { error: deleteTokenError } = await supabaseAdmin
+    .from("line_accounts")
+    .delete()
+    .eq("profile_id", user.id);
+  if (deleteTokenError) {
+    console.error(deleteTokenError.message);
+    redirect("/connect?error=line_disconnect_failed");
+  }
+
+  const { error: updateUserError } =
+    await supabaseAdmin.auth.admin.updateUserById(user.id, {
+      user_metadata: {
+        line_connected: false,
+      },
+    });
+  if (updateUserError) {
+    console.error(updateUserError.message);
+    redirect("/connect?error=line_disconnect_failed");
+  }
+
+  redirect("/dashboard");
 };

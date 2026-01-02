@@ -1,24 +1,30 @@
 "use client";
 
 import {
+  Alert,
   Button,
-  FieldError,
+  ErrorMessage,
+  Form,
   Input,
   InputOTP,
   Label,
   Spinner,
   TextField,
 } from "@heroui/react";
+import { useRouter } from "next/navigation";
 import { type FC, useActionState } from "react";
 import { type VerifyOtpState, verifyOtp } from "../actions";
 
 type VerifyOtpFormProps = {
-  next?: string;
+  nextPath?: string;
   email?: string;
 };
 
 export const VerifyOtpForm: FC<VerifyOtpFormProps> = (props) => {
+  const router = useRouter();
+
   const initialState: VerifyOtpState = {
+    formError: "",
     email: {
       value: props.email ?? "",
       editable: !props.email,
@@ -33,63 +39,93 @@ export const VerifyOtpForm: FC<VerifyOtpFormProps> = (props) => {
   );
 
   return (
-    <form action={formAction}>
-      {state.message && <p className="text-sm text-danger">{state.message}</p>}
-      <input name="next" type="hidden" value={props.next ?? "/"} />
-      <TextField
-        defaultValue={state.email.value}
-        fullWidth
-        isInvalid={!!state.email.errors?.length}
-        isReadOnly={!state.email.editable}
-        name="email"
-        type="email"
-      >
-        <Label>Email</Label>
-        <Input placeholder="you@example.com" />
-        {state.email.errors?.map((error) => (
-          <FieldError key={error}>{error}</FieldError>
-        ))}
-      </TextField>
-      <div className="flex flex-col gap-2">
-        <Label>Verification code</Label>
-        <InputOTP
-          autoFocus
-          isDisabled={isPending}
-          isInvalid={!!state.code.errors?.length}
-          maxLength={6}
-          name="code"
+    <div className="flex justify-center px-6 py-8">
+      <Form action={formAction} className="w-full max-w-md space-y-6">
+        {state.formError ? (
+          <Alert status="danger">
+            <Alert.Indicator />
+            <Alert.Content>
+              <Alert.Title>Something went wrong</Alert.Title>
+              <Alert.Description>{state.formError}</Alert.Description>
+            </Alert.Content>
+          </Alert>
+        ) : null}
+        <input name="next" type="hidden" value={props.nextPath} />
+        <TextField
+          defaultValue={state.email.value}
+          fullWidth
+          isInvalid={!!state.email.errors?.length}
+          isReadOnly={!state.email.editable}
+          name="email"
+          type="email"
         >
-          <InputOTP.Group>
-            <InputOTP.Slot index={0} />
-            <InputOTP.Slot index={1} />
-            <InputOTP.Slot index={2} />
-          </InputOTP.Group>
-          <InputOTP.Separator />
-          <InputOTP.Group>
-            <InputOTP.Slot index={3} />
-            <InputOTP.Slot index={4} />
-            <InputOTP.Slot index={5} />
-          </InputOTP.Group>
-        </InputOTP>
-        {state.code.errors?.map((error) => (
-          <p className="text-sm text-danger" key={error}>
-            {error}
-          </p>
-        ))}
-      </div>
-      <Button
-        type="submit"
-        isPending={isPending}
-        isDisabled={isPending}
-        fullWidth
-      >
-        {({ isPending: isSubmitting }) => (
-          <>
-            {isSubmitting ? <Spinner color="current" size="sm" /> : null}
-            {isSubmitting ? "Verifying..." : "Verify OTP"}
-          </>
-        )}
-      </Button>
-    </form>
+          <Label className="text-sm font-medium">Email</Label>
+          <Input placeholder="you@example.com" />
+          {state.email.errors?.length ? (
+            <div className="mt-1 space-y-1">
+              {state.email.errors.map((error) => (
+                <ErrorMessage key={error} className="block">
+                  {error}
+                </ErrorMessage>
+              ))}
+            </div>
+          ) : null}
+        </TextField>
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Verification code</Label>
+          <InputOTP
+            autoFocus
+            isDisabled={isPending}
+            isInvalid={!!state.code.errors?.length}
+            maxLength={6}
+            name="code"
+          >
+            <InputOTP.Group>
+              <InputOTP.Slot index={0} />
+              <InputOTP.Slot index={1} />
+              <InputOTP.Slot index={2} />
+            </InputOTP.Group>
+            <InputOTP.Separator />
+            <InputOTP.Group>
+              <InputOTP.Slot index={3} />
+              <InputOTP.Slot index={4} />
+              <InputOTP.Slot index={5} />
+            </InputOTP.Group>
+          </InputOTP>
+          {state.code.errors?.length ? (
+            <div className="mt-1 space-y-1">
+              {state.code.errors.map((error) => (
+                <ErrorMessage key={error} className="block">
+                  {error}
+                </ErrorMessage>
+              ))}
+            </div>
+          ) : null}
+        </div>
+        <div className="flex items-center gap-3">
+          <Button type="submit" isPending={isPending} isDisabled={isPending}>
+            {({ isPending: isSubmitting }) => (
+              <>
+                {isSubmitting ? <Spinner color="current" size="sm" /> : null}
+                {isSubmitting ? "Verifying..." : "Verify OTP"}
+              </>
+            )}
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            onPress={() =>
+              router.replace(
+                props.nextPath?.startsWith("/dashboard")
+                  ? props.nextPath
+                  : "/dashboard",
+              )
+            }
+          >
+            Retry
+          </Button>
+        </div>
+      </Form>
+    </div>
   );
 };

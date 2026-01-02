@@ -15,7 +15,7 @@ export default function LoginErrorPage(props: {
   }, [props.error]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-6">
+    <div className="flex justify-center px-6">
       <div className="w-full max-w-md space-y-4 text-center">
         <h1 className="text-xl font-semibold">Login error</h1>
         <p className="text-sm text-default-500">
