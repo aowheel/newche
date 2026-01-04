@@ -4,6 +4,7 @@ import {
   validateSignature,
 } from "@line/bot-sdk";
 import { type NextRequest, NextResponse } from "next/server";
+import z from "zod";
 import { env } from "@/lib/env/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -17,15 +18,29 @@ type LineSource = {
   type?: string;
 };
 
+type LineMentionee = {
+  index?: number;
+  length?: number;
+};
+
+type LineMessage = {
+  type?: string;
+  text?: string;
+  mention?: {
+    mentionees?: Array<LineMentionee>;
+  };
+};
+
 type LineEvent = {
   type?: string;
   source?: LineSource;
   replyToken?: string;
+  message?: LineMessage;
   joined?: {
-    members?: { type?: string; userId?: string }[];
+    members?: Array<{ type?: string; userId?: string }>;
   };
   left?: {
-    members?: { type?: string; userId?: string }[];
+    members?: Array<{ type?: string; userId?: string }>;
   };
 };
 
@@ -60,39 +75,61 @@ export async function POST(request: NextRequest) {
 
   const supabaseAdmin = createAdminClient();
 
-  const upsertLineGroup = async (groupId: string) => {
-    await supabaseAdmin
-      .from("line_groups")
-      .upsert({ id: groupId }, { onConflict: "id" });
-  };
-
-  const upsertLineAccount = async (
-    userIds: string | string[],
-    groupId?: string,
-  ) => {
+  const upsertLineAccount = async (userIds: string | string[]) => {
     const accountIds = Array.isArray(userIds) ? userIds : [userIds];
-    if (accountIds.length === 0) {
-      return;
+    if (accountIds.length > 0) {
+      const accountsPayload = accountIds.map((accountId) => ({
+        id: accountId,
+      }));
+      await supabaseAdmin
+        .from("line_accounts")
+        .upsert(accountsPayload, { onConflict: "id" });
     }
-    const accountsPayload = accountIds.map((accountId) => ({ id: accountId }));
-    await supabaseAdmin
-      .from("line_accounts")
-      .upsert(accountsPayload, { onConflict: "id" });
-
-    if (!groupId) {
-      return;
-    }
-
-    const accountsGroupsPayload = accountIds.map((accountId) => ({
-      account_id: accountId,
-      group_id: groupId,
-    }));
-    await supabaseAdmin
-      .from("line_accounts_groups")
-      .upsert(accountsGroupsPayload, { onConflict: "account_id,group_id" });
   };
 
-  for (const event of body.events as LineEvent[]) {
+  const stripMentions = (text: string, mentionees: Array<LineMentionee>) => {
+    if (mentionees.length === 0) {
+      return text.trim();
+    }
+    const ranges = mentionees
+      .map((mentionee) => ({
+        index: mentionee.index ?? 0,
+        length: mentionee.length ?? 0,
+      }))
+      .filter((range) => range.length > 0)
+      .sort((a, b) => b.index - a.index);
+    let result = text;
+    for (const range of ranges) {
+      result =
+        result.slice(0, range.index) + result.slice(range.index + range.length);
+    }
+    return result.trim();
+  };
+
+  const connectWorkspaceWithGroup = async (
+    workspaceId: string,
+    groupId: string,
+  ) => {
+    const { data, error } = await supabaseAdmin
+      .from("workspaces")
+      .update({
+        line_group_id: groupId,
+        line_connect_status: "connected",
+      })
+      .eq("id", workspaceId)
+      .eq("line_connect_status", "pending")
+      .is("line_group_id", null)
+      .select("id")
+      .maybeSingle();
+    if (error) {
+      console.error(error);
+    }
+    if (data) {
+      return data;
+    }
+  };
+
+  for (const event of body.events as Array<LineEvent>) {
     if (!event?.type) {
       continue;
     }
@@ -108,7 +145,7 @@ export async function POST(request: NextRequest) {
           messages: [
             {
               type: "text",
-              text: `Thanks for adding the bot! Please open this link to get started:\n${env.NEXT_PUBLIC_APP_URL}/dashboard/line`,
+              text: `Thanks for adding the bot! Please open this link to connect your LINE account:\n${env.NEXT_PUBLIC_APP_URL}/connect`,
             },
           ],
         });
@@ -118,78 +155,119 @@ export async function POST(request: NextRequest) {
 
     if (event.type === "join") {
       const groupId = event.source?.groupId;
-      if (groupId) {
-        await upsertLineGroup(groupId);
-        const memberIds: string[] = [];
-        let start: string | undefined;
-        do {
-          const response = await line.getGroupMembersIds(groupId, start);
-          memberIds.push(...response.memberIds);
-          start = response.next;
-        } while (start);
-        await upsertLineAccount(memberIds, groupId);
-      }
       if (groupId && event.replyToken) {
         await line.replyMessage({
           replyToken: event.replyToken,
           messages: [
             {
               type: "text",
-              text: `Thanks for adding the bot! Please open this link to get started:\n${env.NEXT_PUBLIC_APP_URL}/dashboard/line/${groupId}`,
+              text: "Thanks for adding the bot! To connect your workspace, please mention this bot with your workspace ID.",
             },
           ],
         });
-      }
-      continue;
-    }
-
-    if (event.type === "reaction") {
-      const userId = event.source?.userId;
-      const groupId = event.source?.groupId;
-      if (groupId) {
-        await upsertLineGroup(groupId);
-      }
-      if (userId) {
-        await upsertLineAccount(userId, groupId);
       }
       continue;
     }
 
     if (event.type === "memberJoined") {
-      const groupId = event.source?.groupId;
-      if (groupId) {
-        await upsertLineGroup(groupId);
-      }
       const joinedMemberIds =
         event.joined?.members
           ?.map((member) => member.userId)
           .filter((memberId): memberId is string => Boolean(memberId)) ?? [];
-      await upsertLineAccount(joinedMemberIds, groupId);
-      if (groupId && event.replyToken) {
+      await upsertLineAccount(joinedMemberIds);
+    }
+
+    if (event.type === "message") {
+      const groupId = event.source?.groupId;
+      const text = event.message?.type === "text" ? event.message.text : null;
+      const senderUserId = event.source?.userId;
+      if (!groupId || !text || !senderUserId) {
+        continue;
+      }
+
+      const rawId = stripMentions(
+        text,
+        event.message?.mention?.mentionees ?? [],
+      );
+      const { success, data: workspaceId } = z.uuid().safeParse(rawId);
+      if (!success) {
+        continue;
+      }
+
+      const { data: senderAccount, error: senderAccountError } =
+        await supabaseAdmin
+          .from("line_accounts")
+          .select("profile_id")
+          .eq("id", senderUserId)
+          .maybeSingle();
+      if (senderAccountError) {
+        console.error(senderAccountError);
+        continue;
+      }
+      if (!senderAccount?.profile_id) {
+        if (event.replyToken) {
+          await line.replyMessage({
+            replyToken: event.replyToken,
+            messages: [
+              {
+                type: "text",
+                text: `Please connect your LINE account first:\n${env.NEXT_PUBLIC_APP_URL}/connect`,
+              },
+            ],
+          });
+        }
+        continue;
+      }
+
+      const { data: membership, error: membershipError } = await supabaseAdmin
+        .from("profiles_workspaces")
+        .select("role")
+        .eq("profile_id", senderAccount.profile_id)
+        .eq("workspace_id", workspaceId)
+        .maybeSingle();
+      if (membershipError) {
+        console.error(membershipError);
+        continue;
+      }
+      if (membership?.role !== "admin") {
+        if (event.replyToken) {
+          await line.replyMessage({
+            replyToken: event.replyToken,
+            messages: [
+              {
+                type: "text",
+                text: "Only workspace admins can connect this workspace.",
+              },
+            ],
+          });
+        }
+        continue;
+      }
+
+      const workspace = await connectWorkspaceWithGroup(workspaceId, groupId);
+      if (workspace && event.replyToken) {
         await line.replyMessage({
           replyToken: event.replyToken,
           messages: [
             {
               type: "text",
-              text: `Welcome! Please open this link to get started:\n${env.NEXT_PUBLIC_APP_URL}/dashboard/line/${groupId}`,
+              text: `Workspace connected. Continue here:\n${env.NEXT_PUBLIC_APP_URL}/workspace/${workspace.id}`,
             },
           ],
         });
+        continue;
       }
-    }
 
-    if (event.type === "memberLeft") {
-      const leftMemberIds =
-        event.left?.members
-          ?.map((member) => member.userId)
-          .filter((memberId): memberId is string => Boolean(memberId)) ?? [];
-      const groupId = event.source?.groupId;
-      if (groupId && leftMemberIds.length > 0) {
-        await supabaseAdmin
-          .from("line_accounts_groups")
-          .delete()
-          .eq("group_id", groupId)
-          .in("account_id", leftMemberIds);
+      if (event.replyToken) {
+        await line.replyMessage({
+          replyToken: event.replyToken,
+          messages: [
+            {
+              type: "text",
+              text: "This workspace is not pending or is already connected.",
+            },
+          ],
+        });
       }
     }
   }

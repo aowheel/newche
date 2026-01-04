@@ -66,65 +66,92 @@ export type Database = {
           },
         ];
       };
-      line_accounts_groups: {
-        Row: {
-          account_id: string;
-          group_id: string;
-        };
-        Insert: {
-          account_id: string;
-          group_id: string;
-        };
-        Update: {
-          account_id?: string;
-          group_id?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "line_accounts_groups_account_id_fkey";
-            columns: ["account_id"];
-            isOneToOne: false;
-            referencedRelation: "line_accounts";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "line_accounts_groups_group_id_fkey";
-            columns: ["group_id"];
-            isOneToOne: false;
-            referencedRelation: "line_groups";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
-      line_groups: {
-        Row: {
-          id: string;
-        };
-        Insert: {
-          id: string;
-        };
-        Update: {
-          id?: string;
-        };
-        Relationships: [];
-      };
       profiles: {
         Row: {
           avatar_url: string | null;
+          bio: string | null;
+          created_at: string;
           display_name: string | null;
           id: string;
           updated_at: string;
         };
         Insert: {
           avatar_url?: string | null;
+          bio?: string | null;
+          created_at?: string;
           display_name?: string | null;
           id: string;
           updated_at?: string;
         };
         Update: {
           avatar_url?: string | null;
+          bio?: string | null;
+          created_at?: string;
           display_name?: string | null;
           id?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      profiles_workspaces: {
+        Row: {
+          profile_id: string;
+          role: Database["public"]["Enums"]["workspace_role"];
+          workspace_id: string;
+        };
+        Insert: {
+          profile_id: string;
+          role?: Database["public"]["Enums"]["workspace_role"];
+          workspace_id: string;
+        };
+        Update: {
+          profile_id?: string;
+          role?: Database["public"]["Enums"]["workspace_role"];
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "profiles_workspaces_profile_id_fkey";
+            columns: ["profile_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "profiles_workspaces_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      workspaces: {
+        Row: {
+          created_at: string;
+          description: string | null;
+          id: string;
+          line_connect_status: Database["public"]["Enums"]["line_connect_status"];
+          line_group_id: string | null;
+          title: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          line_connect_status?: Database["public"]["Enums"]["line_connect_status"];
+          line_group_id?: string | null;
+          title?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          line_connect_status?: Database["public"]["Enums"]["line_connect_status"];
+          line_group_id?: string | null;
+          title?: string | null;
           updated_at?: string;
         };
         Relationships: [];
@@ -137,7 +164,8 @@ export type Database = {
       [_ in never]: never;
     };
     Enums: {
-      [_ in never]: never;
+      line_connect_status: "not_connected" | "pending" | "connected";
+      workspace_role: "admin" | "member";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -270,6 +298,9 @@ export const Constants = {
     Enums: {},
   },
   public: {
-    Enums: {},
+    Enums: {
+      line_connect_status: ["not_connected", "pending", "connected"],
+      workspace_role: ["admin", "member"],
+    },
   },
 } as const;

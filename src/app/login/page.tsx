@@ -7,7 +7,10 @@ export default async function LoginPage(props: {
   const searchParams = await props.searchParams;
   const { next, error } = z
     .looseObject({
-      next: z.string().optional(),
+      next: z
+        .string()
+        .refine((path) => path.startsWith("/workspace"))
+        .catch("/workspace"),
       error: z.string().optional(),
     })
     .parse(searchParams);

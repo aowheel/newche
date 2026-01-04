@@ -16,8 +16,8 @@ import { type FC, useActionState } from "react";
 import { type VerifyOtpState, verifyOtp } from "../actions";
 
 type VerifyOtpFormProps = {
-  nextPath?: string;
-  email?: string;
+  nextPath: string;
+  email: string;
 };
 
 export const VerifyOtpForm: FC<VerifyOtpFormProps> = (props) => {
@@ -26,7 +26,7 @@ export const VerifyOtpForm: FC<VerifyOtpFormProps> = (props) => {
   const initialState: VerifyOtpState = {
     formError: "",
     email: {
-      value: props.email ?? "",
+      value: props.email,
       editable: !props.email,
     },
     code: {
@@ -41,7 +41,7 @@ export const VerifyOtpForm: FC<VerifyOtpFormProps> = (props) => {
   return (
     <div className="flex justify-center px-6 py-8">
       <Form action={formAction} className="w-full max-w-md space-y-6">
-        {state.formError ? (
+        {state.formError && (
           <Alert status="danger">
             <Alert.Indicator />
             <Alert.Content>
@@ -49,7 +49,7 @@ export const VerifyOtpForm: FC<VerifyOtpFormProps> = (props) => {
               <Alert.Description>{state.formError}</Alert.Description>
             </Alert.Content>
           </Alert>
-        ) : null}
+        )}
         <input name="next" type="hidden" value={props.nextPath} />
         <TextField
           defaultValue={state.email.value}
@@ -61,7 +61,7 @@ export const VerifyOtpForm: FC<VerifyOtpFormProps> = (props) => {
         >
           <Label className="text-sm font-medium">Email</Label>
           <Input placeholder="you@example.com" />
-          {state.email.errors?.length ? (
+          {state.email.errors?.length && (
             <div className="mt-1 space-y-1">
               {state.email.errors.map((error) => (
                 <ErrorMessage key={error} className="block">
@@ -69,7 +69,7 @@ export const VerifyOtpForm: FC<VerifyOtpFormProps> = (props) => {
                 </ErrorMessage>
               ))}
             </div>
-          ) : null}
+          )}
         </TextField>
         <div className="space-y-2">
           <Label className="text-sm font-medium">Verification code</Label>
@@ -114,13 +114,8 @@ export const VerifyOtpForm: FC<VerifyOtpFormProps> = (props) => {
           <Button
             size="sm"
             variant="secondary"
-            onPress={() =>
-              router.replace(
-                props.nextPath?.startsWith("/dashboard")
-                  ? props.nextPath
-                  : "/dashboard",
-              )
-            }
+            onPress={() => router.replace(props.nextPath)}
+            isDisabled={isPending}
           >
             Retry
           </Button>

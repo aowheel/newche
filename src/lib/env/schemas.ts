@@ -5,7 +5,7 @@ export const clientSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.url(),
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().min(1),
   NEXT_PUBLIC_LINE_LOGIN_CHANNEL_ID: z.string().min(1),
-  NEXT_PUBLIC_LINE_GROUP_INVITE_URL: z.url(),
+  NEXT_PUBLIC_LINE_OFFICIAL_ACCOUNT_URL: z.url(),
 });
 
 export const serverSchema = z.object({

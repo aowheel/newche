@@ -3,10 +3,12 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
   const next = request.nextUrl.searchParams.get("next");
-  const safeNext = next?.startsWith("/dashboard") ? next : "/dashboard";
+  const safeNext = next?.startsWith("/workspace") ? next : "/workspace";
 
   const redirectWithError = (error?: unknown) => {
-    if (error) console.error(error);
+    if (error) {
+      console.error(error);
+    }
     const errorRedirectUrl = new URL("/login", request.url);
     errorRedirectUrl.searchParams.set("next", safeNext);
     errorRedirectUrl.searchParams.set("error", "auth_failed");
@@ -21,7 +23,7 @@ export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const { error } = await supabase.auth.exchangeCodeForSession(code);
   if (error) {
-    return redirectWithError(error.message);
+    return redirectWithError(error);
   }
 
   const redirectUrl = new URL(safeNext, request.url);

@@ -7,8 +7,11 @@ export default async function VerifyPage(props: {
   const searchParams = await props.searchParams;
   const { next, email } = z
     .looseObject({
-      next: z.string().optional(),
-      email: z.string().optional(),
+      next: z
+        .string()
+        .refine((path) => path.startsWith("/workspace"))
+        .catch("/workspace"),
+      email: z.string().catch(""),
     })
     .parse(searchParams);
 

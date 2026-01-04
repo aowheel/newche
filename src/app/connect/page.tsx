@@ -12,22 +12,17 @@ export default async function LineConnectPage(props: {
   const isConnected = !!user?.user_metadata?.line_connected;
 
   const searchParams = await props.searchParams;
-  const { error, next } = z
+  const { next, error } = z
     .looseObject({
-      error: z.string().optional(),
       next: z.string().optional(),
+      error: z.string().optional(),
     })
     .parse(searchParams);
-
-  const nextPath =
-    typeof next === "string" && next.startsWith("/dashboard")
-      ? next
-      : undefined;
 
   return (
     <LineConnectForm
       isConnected={isConnected}
-      nextPath={nextPath}
+      nextPath={next}
       queryError={error}
     />
   );

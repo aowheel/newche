@@ -22,9 +22,10 @@ export const signIn = async (
 ): Promise<SignInState> => {
   const next = z
     .string()
-    .refine((path) => path.startsWith("/dashboard"))
-    .catch("/dashboard")
+    .refine((path) => path.startsWith("/workspace"))
+    .catch("/workspace")
     .parse(formData.get("next"));
+
   const searchParams = new URLSearchParams();
   searchParams.set("next", next);
 
@@ -46,7 +47,9 @@ export const signIn = async (
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (user) redirect(next);
+  if (user) {
+    redirect(next);
+  }
 
   const { error: signInError } = await supabase.auth.signInWithOtp({
     email,
@@ -55,7 +58,7 @@ export const signIn = async (
     },
   });
   if (signInError) {
-    console.error(signInError.message);
+    console.error(signInError);
     return {
       formError: "Sending OTP failed",
       email: {
@@ -70,7 +73,6 @@ export const signIn = async (
 
 export type VerifyOtpState = {
   formError: string;
-  first?: boolean;
   email: {
     value: string;
     editable: boolean;
@@ -88,8 +90,8 @@ export const verifyOtp = async (
 ): Promise<VerifyOtpState> => {
   const next = z
     .string()
-    .refine((path) => path.startsWith("/dashboard"))
-    .catch("/dashboard")
+    .refine((path) => path.startsWith("/workspace"))
+    .catch("/workspace")
     .parse(formData.get("next"));
 
   const { data: email, error: emailError } = z
@@ -136,7 +138,7 @@ export const verifyOtp = async (
     token: code,
   });
   if (verifyOtpError) {
-    console.error(verifyOtpError.message);
+    console.error(verifyOtpError);
     return {
       formError: "OTP verification failed",
       email: {
@@ -154,79 +156,94 @@ export const verifyOtp = async (
 
 export const signOut = async () => {
   const supabase = await createClient();
-  const { data: user } = await supabase.auth.getUser();
-  if (user) await supabase.auth.signOut();
+  const { error: signOutError } = await supabase.auth.signOut();
+  if (signOutError) {
+    console.error(signOutError);
+  }
   redirect("/");
 };
 
-export const connectWithLine = async (formData: FormData) => {
-  const codeVerifier = crypto.randomBytes(32).toString("base64url");
-  const codeChallenge = crypto
-    .createHash("sha256")
-    .update(codeVerifier)
-    .digest("base64url");
+export type LineConnectState = {
+  formError?: string;
+};
 
-  const cookieStore = await cookies();
-  const cookieOptions = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax" as const,
-  };
-  cookieStore.set("line_oauth_code_verifier", codeVerifier, cookieOptions);
+export const connectWithLine = async (formData: FormData): Promise<void> => {
+  let authorizeUrl = "";
+  try {
+    const codeVerifier = crypto.randomBytes(32).toString("base64url");
+    const codeChallenge = crypto
+      .createHash("sha256")
+      .update(codeVerifier)
+      .digest("base64url");
 
-  const next = formData.get("next");
-  const safeNext = z
-    .string()
-    .refine((path) => path.startsWith("/dashboard/line"))
-    .catch("/dashboard/line")
-    .parse(next);
-  const statePayloadBase64 = Buffer.from(safeNext).toString("base64url");
-  const stateSignature = crypto
-    .createHmac("sha256", env.LINE_OAUTH_STATE_SECRET)
-    .update(statePayloadBase64)
-    .digest("base64url");
+    const cookieStore = await cookies();
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax" as const,
+    };
+    cookieStore.set("line_oauth_code_verifier", codeVerifier, cookieOptions);
 
-  const params = new URLSearchParams({
-    response_type: "code",
-    client_id: env.NEXT_PUBLIC_LINE_LOGIN_CHANNEL_ID,
-    redirect_uri: `${env.NEXT_PUBLIC_APP_URL}/auth/line/callback`,
-    state: `${statePayloadBase64}.${stateSignature}`,
-    scope: "profile openid",
-    code_challenge: codeChallenge,
-    code_challenge_method: "S256",
-  });
+    const next = z
+      .string()
+      .refine((path) => path.startsWith("/workspace"))
+      .catch("/connect")
+      .parse(formData.get("next"));
+    const statePayloadBase64 = Buffer.from(next).toString("base64url");
+    const stateSignature = crypto
+      .createHmac("sha256", env.LINE_OAUTH_STATE_SECRET)
+      .update(statePayloadBase64)
+      .digest("base64url");
 
-  redirect(`https://access.line.me/oauth2/v2.1/authorize?${params}`);
+    const searchParams = new URLSearchParams({
+      response_type: "code",
+      client_id: env.NEXT_PUBLIC_LINE_LOGIN_CHANNEL_ID,
+      redirect_uri: `${env.NEXT_PUBLIC_APP_URL}/auth/line/callback`,
+      state: `${statePayloadBase64}.${stateSignature}`,
+      scope: "profile openid",
+      code_challenge: codeChallenge,
+      code_challenge_method: "S256",
+    });
+
+    authorizeUrl = `https://access.line.me/oauth2/v2.1/authorize?${searchParams}`;
+  } catch (error) {
+    console.error(error);
+    redirect("/connect?error=line_connect_failed", RedirectType.replace);
+  }
+
+  redirect(authorizeUrl);
 };
 
 export const disconnectFromLine = async () => {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const supabaseAdmin = createAdminClient();
-
-  const { error: deleteTokenError } = await supabaseAdmin
-    .from("line_accounts")
-    .delete()
-    .eq("profile_id", user.id);
-  if (deleteTokenError) {
-    console.error(deleteTokenError.message);
-    redirect("/connect?error=line_disconnect_failed");
-  }
-
-  const { error: updateUserError } =
-    await supabaseAdmin.auth.admin.updateUserById(user.id, {
-      user_metadata: {
-        line_connected: false,
-      },
+  try {
+    const supabase = await createClient();
+    const { error: updateUserError } = await supabase.auth.updateUser({
+      data: { line_connected: false },
     });
-  if (updateUserError) {
-    console.error(updateUserError.message);
-    redirect("/connect?error=line_disconnect_failed");
+    if (updateUserError) {
+      throw updateUserError;
+    }
+    const {
+      data: { user },
+      error: refreshError,
+    } = await supabase.auth.refreshSession();
+    if (refreshError) {
+      throw refreshError;
+    }
+    if (user?.user_metadata?.line_connected === false) {
+      const supabaseAdmin = createAdminClient();
+      const { error: deleteTokenError } = await supabaseAdmin
+        .from("line_accounts")
+        .delete()
+        .eq("profile_id", user.id);
+      if (deleteTokenError) {
+        throw deleteTokenError;
+      }
+    }
+  } catch (error) {
+    console.error(error);
+    redirect("/connect?error=line_disconnect_failed", RedirectType.replace);
   }
 
-  redirect("/dashboard");
+  redirect("/connect", RedirectType.replace);
 };

@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { env } from "./lib/env/server";
 
 export const config = {
-  matcher: ["/login/:path*", "/connect/:path*", "/dashboard/:path*"],
+  matcher: ["/login/:path*", "/connect/:path*", "/workspace/:path*"],
 };
 
 export async function proxy(request: NextRequest) {
@@ -32,12 +32,10 @@ export async function proxy(request: NextRequest) {
 
   const { data } = await supabase.auth.getClaims();
   const isAuthenticated = !!data;
-  const isLineConnected = !!data?.claims.user_metadata?.line_connected;
   const next = searchParams.get("next");
   const isLoginPath = pathname.startsWith("/login");
   const isConnectPath = pathname.startsWith("/connect");
-  const isDashboardPath = pathname.startsWith("/dashboard");
-  const isLinePath = pathname.startsWith("/dashboard/line");
+  const isWorkspacePath = pathname.startsWith("/workspace");
 
   const redirectWithNext = (path: string, next?: string) => {
     const redirectUrl = new URL(path, url);
@@ -50,30 +48,13 @@ export async function proxy(request: NextRequest) {
   if (isLoginPath) {
     if (isAuthenticated) {
       return redirectWithNext(
-        next?.startsWith("/dashboard") ? next : "/dashboard",
+        next?.startsWith("/workspace") ? next : "/workspace",
       );
     }
     return response;
   }
 
-  if (isConnectPath) {
-    if (!isAuthenticated) {
-      return redirectWithNext("/login", pathname);
-    }
-    return response;
-  }
-
-  if (isLinePath) {
-    if (!isAuthenticated) {
-      return redirectWithNext("/login", pathname);
-    }
-    if (!isLineConnected) {
-      return redirectWithNext("/connect", pathname);
-    }
-    return response;
-  }
-
-  if (isDashboardPath) {
+  if (isConnectPath || isWorkspacePath) {
     if (!isAuthenticated) {
       return redirectWithNext("/login", pathname);
     }

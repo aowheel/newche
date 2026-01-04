@@ -24,6 +24,8 @@ Use `pnpm` (lockfile is `pnpm-lock.yaml`).
 - Use TypeScript and follow existing file naming conventions in `src/`.
 - Prefer descriptive component and module names aligned with feature boundaries.
 - UI components use HeroUI v3 beta (`@heroui/react`, `@heroui/styles`).
+- Avoid extracting one-off values into top-level constants; inline short labels or literals when used only once.
+- Use `&&` for conditional rendering instead of ternaries returning `null`.
 - Zod is v4. Prefer top-level string format helpers (method forms like `z.string().email()` are deprecated).
   - Examples: `z.email()`, `z.url()`, `z.uuid()`, `z.guid()`, `z.ipv4()`, `z.ipv6()`, `z.cidrv4()`, `z.cidrv6()`
   - ISO helpers: `z.iso.date()`, `z.iso.time()`, `z.iso.datetime()`, `z.iso.duration()`
